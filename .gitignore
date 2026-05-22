@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+data/raw/
+mlruns/
+logs/
+*.egg-info/
