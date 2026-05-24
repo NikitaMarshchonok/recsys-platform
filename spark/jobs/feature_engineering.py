@@ -46,3 +46,18 @@ user_features = user_features.fillna(0, subset=["rating_stddev"])
 
 print("=== Фичи пользователей ===")
 user_features.show(5)
+
+# Считаем характеристики каждого фильма
+movie_features = ratings.groupBy("movieId").agg(
+    count("userId").alias("total_ratings"),     # сколько людей оценили
+    mean("rating").alias("avg_rating"),          # средняя оценка фильма
+    stddev("rating").alias("rating_stddev"),     # насколько спорный фильм
+)
+
+movie_features = movie_features.fillna(0, subset=["rating_stddev"])
+
+# Добавляем жанр из таблицы movies
+movie_features = movie_features.join(movies, on="movieId", how="left")
+
+print("=== Фичи фильмов ===")
+movie_features.show(5)
