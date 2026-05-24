@@ -61,3 +61,20 @@ movie_features = movie_features.join(movies, on="movieId", how="left")
 
 print("=== Фичи фильмов ===")
 movie_features.show(5)
+
+# Сохраняем обработанные фичи
+os.makedirs("data/processed", exist_ok=True)
+
+user_features.toPandas().to_csv(
+    "data/processed/user_features.csv", index=False
+)
+movie_features.toPandas().to_csv(
+    "data/processed/movie_features.csv", index=False
+)
+
+print("Фичи сохранены в data/processed/")
+print(f"Пользователей с фичами: {user_features.count()}")
+print(f"Фильмов с фичами: {movie_features.count()}")
+
+spark.stop()
+print("Готово!")
