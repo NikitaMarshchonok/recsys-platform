@@ -28,3 +28,21 @@ users = spark.read \
 print(f"Оценок: {ratings.count()}")
 print(f"Фильмов: {movies.count()}")
 print(f"Пользователей: {users.count()}")
+
+
+# Считаем характеристики каждого пользователя
+# Это и есть feature engineering
+user_features = ratings.groupBy("userId").agg(
+    count("movieId").alias("total_rated"),      # сколько фильмов оценил
+    mean("rating").alias("avg_rating"),          # средняя оценка
+    stddev("rating").alias("rating_stddev"),     # насколько разброс оценок
+    min("rating").alias("min_rating"),           # самая низкая оценка
+    max("rating").alias("max_rating"),           # самая высокая оценка
+)
+
+# stddev может быть null если пользователь оценил только 1 фильм
+# заменяем null на 0
+user_features = user_features.fillna(0, subset=["rating_stddev"])
+
+print("=== Фичи пользователей ===")
+user_features.show(5)
