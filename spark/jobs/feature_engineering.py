@@ -1,10 +1,13 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import(
-    count, mean, sttdev, min, max, col
+    count, mean, stddev, min, max, col
 
 )
 import os
-spark = SparkSession.builder.appName('RecSys Feature Engineering').master('local[*]').get0rCreate()
+spark = SparkSession.builder \
+    .appName("RecSys Feature Engineering") \
+    .master("local[*]") \
+    .getOrCreate()
 
 spark.sparkContext.setLogLevel('ERROR')
 print('Spark Session created succsessfully')
@@ -36,7 +39,7 @@ print(f"Пользователей: {users.count()}")
 user_features = ratings.groupBy("userId").agg(
     count("movieId").alias("total_rated"),      # сколько фильмов оценил
     mean("rating").alias("avg_rating"),          # средняя оценка
-    sttdev("rating").alias("rating_stddev"),     # насколько разброс оценок
+    stddev("rating").alias("rating_stddev"),     # насколько разброс оценок
     min("rating").alias("min_rating"),           # самая низкая оценка
     max("rating").alias("max_rating"),           # самая высокая оценка
 )
@@ -52,7 +55,7 @@ user_features.show(5)
 movie_features = ratings.groupBy("movieId").agg(
     count("userId").alias("total_ratings"),     # сколько людей оценили
     mean("rating").alias("avg_rating"),          # средняя оценка фильма
-    sttdev("rating").alias("rating_stddev"),     # насколько спорный фильм
+    stddev("rating").alias("rating_stddev"),     # насколько спорный фильм
 )
 
 movie_features = movie_features.fillna(0, subset=["rating_stddev"])
