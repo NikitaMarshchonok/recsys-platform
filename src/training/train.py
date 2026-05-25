@@ -20,3 +20,15 @@ mlflow.set_tracking_uri("http://localhost:5001")
 mlflow.set_experiment("recsys_als")
 
 print("Сессии созданы")
+
+# Читаем оценки
+ratings = spark.read \
+    .option("header", "true") \
+    .option("inferSchema", "true") \
+    .csv("data/raw/ratings.csv")
+
+# Делим 80% train / 20% test
+train, test = ratings.randomSplit([0.8, 0.2], seed=42)
+
+print(f"Train: {train.count()} записей")
+print(f"Test: {test.count()} записей")
