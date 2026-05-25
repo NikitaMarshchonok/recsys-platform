@@ -32,3 +32,53 @@ train, test = ratings.randomSplit([0.8, 0.2], seed=42)
 
 print(f"Train: {train.count()} записей")
 print(f"Test: {test.count()} записей")
+
+# Параметры модели
+rank = 10        # размерность скрытых факторов
+max_iter = 10    # количество итераций
+reg_param = 0.1  # регуляризация (защита от переобучения)
+
+with mlflow.start_run():
+    # Записываем параметры
+    mlflow.log_param("rank", rank)
+    mlflow.log_param("max_iter", max_iter)
+    mlflow.log_param("reg_param", reg_param)
+
+    # Создаём и обучаем ALS модель
+    als = ALS(
+        rank=rank,
+        maxIter=max_iter,
+        regParam=reg_param,
+        userCol="userId",
+        itemCol="movieId",
+        ratingCol="rating",
+        coldStartStrategy="drop",  # игнорируем новых пользователей
+    )
+
+    model = als.fit(train)
+
+    # Проверяем на тестовых данных
+    predictions = model.transform(test)
+
+    # Считаем RMSE — среднеквадратичная ошибка
+    evaluator = RegressionEvaluator(
+        metricName="rmse",
+        labelCol="rating",
+        predictionCol="prediction",
+    )
+    rmse = evaluator.evaluate(predictions)
+
+    # Записываем метрику
+    mlflow.log_metric("rmse", rmse)
+
+    print(f"RMSE: {rmse:.4f}")
+    print("Эксперимент записан в MLflow!")
+
+    # Сохраняем модель на диск
+    model_path = "models/als_model"
+    os.makedirs("models", exist_ok=True)
+    model.save(model_path)
+    print(f"Модель сохранена в {model_path}")
+
+spark.stop()
+print("Готово!")
