@@ -48,3 +48,41 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+@app.post("/recommend", response_model=list[MovieRecommendation])
+def recommend(request: RecommendRequest):
+    # Проверяем что пользователь существует
+    if request.user_id < 1 or request.user_id > 500:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Пользователь {request.user_id} не найден"
+        )
+
+    # Создаём DataFrame с одним пользователем
+    user_df = spark.createDataFrame(
+        [(request.user_id,)],
+        ["userId"]
+    )
+
+    # Получаем топ-N рекомендаций от модели
+    recs = model.recommendForUserSubset(
+        user_df,
+        request.n_recommendations
+    )
+
+    # Разворачиваем список рекомендаций
+    recs_list = recs.collect()[0]["recommendations"]
+
+    # Собираем результат
+    result = []
+    for rec in recs_list:
+        movie_id = rec["movieId"]
+        movie_info = movies[movies["movieId"] == movie_id].iloc[0]
+        result.append(MovieRecommendation(
+            movie_id=movie_id,
+            title=movie_info["title"],
+            genres=movie_info["genres"],
+            predicted_rating=round(float(rec["rating"]), 2),
+        ))
+
+    return result
