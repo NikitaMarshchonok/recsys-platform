@@ -26,3 +26,25 @@ model = ALSModel.load("models/als_model")
 movies = pd.read_csv("data/raw/movies.csv")
 
 print("API готов к работе!")
+
+# Схема запроса — что принимаем
+class RecommendRequest(BaseModel):
+    user_id: int
+    n_recommendations: int = 10  # по умолчанию 10 фильмов
+
+# Схема ответа — что возвращаем
+class MovieRecommendation(BaseModel):
+    movie_id: int
+    title: str
+    genres: str
+    predicted_rating: float
+
+# Главная страница — проверка что API работает
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "RecSys API работает"}
+
+# Эндпоинт здоровья — для мониторинга
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
