@@ -86,3 +86,31 @@ def recommend(request: RecommendRequest):
         ))
 
     return result
+
+
+@app.get("/similar_movies/{movie_id}")
+def similar_movies(movie_id: int, n: int = 5):
+    movie_features = pd.read_csv("data/processed/movie_features.csv")
+    
+    # Проверяем что фильм существует
+    target = movie_features[movie_features["movieId"] == movie_id]
+    if target.empty:
+        raise HTTPException(status_code=404, detail=f"Фильм {movie_id} не найден")
+    
+    # Находим жанр
+    genre = target.iloc[0]["genres"]
+    
+    # Похожие фильмы того же жанра
+    similar = movie_features[movie_features["genres"] == genre] \
+        .sort_values("avg_rating", ascending=False) \
+        .head(n)
+    
+    return [
+        {
+            "movie_id": int(row["movieId"]),
+            "title": row["title"],
+            "genres": row["genres"],
+            "avg_rating": round(row["avg_rating"], 2),
+        }
+        for _, row in similar.iterrows()
+    ]
