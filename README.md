@@ -74,3 +74,7 @@ curl -X POST "http://localhost:8001/recommend" \
 - RMSE: 1.05 on test set
 - Average API response time: ~1.4s (local Spark)
 - 3 automated tests covering core functionality
+
+## Author
+Nikita Marshchonok
+telegram: @nikitamarshchonok
