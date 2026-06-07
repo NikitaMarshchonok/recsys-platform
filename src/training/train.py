@@ -25,7 +25,7 @@ print("Сессии созданы")
 ratings = spark.read \
     .option("header", "true") \
     .option("inferSchema", "true") \
-    .csv("data/raw/ratings.csv")
+    .csv("data/raw/rating.csv")
 
 # Делим 80% train / 20% test
 train, test = ratings.randomSplit([0.8, 0.2], seed=42)
