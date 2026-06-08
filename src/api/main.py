@@ -87,7 +87,7 @@ def health():
 def recommend(request: RecommendRequest):
     start_time = time.time()  # начинаем замер времени
 
-    if request.user_id < 1 or request.user_id > 500:
+    if request.user_id < 1 or request.user_id > 138493:
         raise HTTPException(
             status_code=404,
             detail=f"Пользователь {request.user_id} не найден"

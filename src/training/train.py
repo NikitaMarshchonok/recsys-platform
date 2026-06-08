@@ -11,6 +11,8 @@ import os
 spark = SparkSession.builder \
     .appName("RecSys Training") \
     .master("local[*]") \
+    .config("spark.driver.memory", "4g") \
+    .config("spark.executor.memory", "4g") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("ERROR")
@@ -27,6 +29,9 @@ ratings = spark.read \
     .option("inferSchema", "true") \
     .csv("data/raw/rating.csv")
 
+# Берём 20% данных для обучения на локальной машине
+ratings = ratings.sample(fraction=0.2, seed=42)
+print(f"После sampling: {ratings.count()} записей")
 # Делим 80% train / 20% test
 train, test = ratings.randomSplit([0.8, 0.2], seed=42)
 
@@ -77,7 +82,7 @@ with mlflow.start_run():
     # Сохраняем модель на диск
     model_path = "models/als_model"
     os.makedirs("models", exist_ok=True)
-    model.save(model_path)
+    model.write().overwrite().save(model_path)
     print(f"Модель сохранена в {model_path}")
 
 spark.stop()
