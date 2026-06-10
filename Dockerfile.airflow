@@ -1,0 +1,23 @@
+FROM apache/airflow:2.8.1
+
+USER root
+
+# Устанавливаем Java
+RUN apt-get update && \
+    apt-get install -y default-jdk && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Устанавливаем переменную окружения
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+USER airflow
+
+# Устанавливаем Python зависимости
+RUN pip install --no-cache-dir \
+    mlflow \
+    pyspark \
+    scikit-learn \
+    pandas \
+    numpy \
+    psycopg2-binary

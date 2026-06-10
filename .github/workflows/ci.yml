@@ -1,0 +1,45 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install fastapi uvicorn pydantic pytest httpx \
+            pyspark pandas numpy scikit-learn psycopg2-binary
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Generate test data
+        run: python scripts/generate_data.py
+
+      - name: Run Spark feature engineering
+        run: python spark/jobs/feature_engineering.py
+
+      - name: Train model
+        run: python src/training/train.py
+        env:
+          MLFLOW_TRACKING_URI: "file:./mlruns"
+
+      - name: Run tests
+        run: python -m pytest tests/ -v

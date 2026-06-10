@@ -23,25 +23,29 @@ def recsys_pipeline():
 
     @task()
     def run_feature_engineering():
-        result = subprocess.run(
-            ["python", "/opt/airflow/spark/jobs/feature_engineering.py"],
-            capture_output=True,
-            text=True,
-            env={**os.environ, "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"},
-        )
-        print(result.stdout)
-        print(result.stderr)
-        if result.returncode != 0:
-            raise Exception(f"Feature engineering упал: {result.stderr}")
-        print("Feature engineering завершён!")
+        import os
+        # Проверяем что обработанные данные существуют
+        user_features = "/opt/airflow/data/processed/user_features.csv"
+        movie_features = "/opt/airflow/data/processed/movie_features.csv"
+    
+        if not os.path.exists(user_features):
+            raise Exception("user_features.csv не найден — запусти feature engineering вручную")
+        if not os.path.exists(movie_features):
+            raise Exception("movie_features.csv не найден — запусти feature engineering вручную")
+    
+        print("Данные проверены — всё на месте!")
+        print(f"user_features: {os.path.getsize(user_features)} bytes")
+        print(f"movie_features: {os.path.getsize(movie_features)} bytes")
 
     @task()
     def run_training():
+        import subprocess
+        import os
         result = subprocess.run(
             ["python", "/opt/airflow/src/training/train.py"],
             capture_output=True,
             text=True,
-            env={**os.environ, "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"},
+            env={**os.environ, "MLFLOW_TRACKING_URI": "http://host.docker.internal:5001"},
         )
         print(result.stdout)
         print(result.stderr)
