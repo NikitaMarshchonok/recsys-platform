@@ -15,8 +15,9 @@ services:
       retries: 5
 
   airflow-init:
-    image: apache/airflow:2.8.1-python3.10
-    user: root
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://recsys:recsys@postgres/recsys
@@ -24,21 +25,21 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-      _PIP_ADDITIONAL_REQUIREMENTS: "mlflow pyspark scikit-learn pandas numpy"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./spark:/opt/airflow/spark
       - ./src:/opt/airflow/src
       - ./data:/opt/airflow/data
       - ./models:/opt/airflow/models
-    command: bash -c "apt-get update -qq && apt-get install -y -qq default-jdk && chown -R airflow /opt/airflow && su airflow -c 'airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com'"
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com"
     depends_on:
       postgres:
         condition: service_healthy
 
   airflow-scheduler:
-    image: apache/airflow:2.8.1-python3.10
-    user: root
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://recsys:recsys@postgres/recsys
@@ -46,22 +47,22 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-      _PIP_ADDITIONAL_REQUIREMENTS: "mlflow pyspark scikit-learn pandas numpy"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./spark:/opt/airflow/spark
       - ./src:/opt/airflow/src
       - ./data:/opt/airflow/data
       - ./models:/opt/airflow/models
-    command: bash -c "apt-get update -qq && apt-get install -y -qq default-jdk && su airflow -c 'airflow scheduler'"
+    command: scheduler
     restart: unless-stopped
     depends_on:
       airflow-init:
         condition: service_completed_successfully
 
   airflow-webserver:
-    image: apache/airflow:2.8.1-python3.10
-    user: root
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://recsys:recsys@postgres/recsys
@@ -69,14 +70,13 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-      _PIP_ADDITIONAL_REQUIREMENTS: "mlflow pyspark scikit-learn pandas numpy"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./spark:/opt/airflow/spark
       - ./src:/opt/airflow/src
       - ./data:/opt/airflow/data
       - ./models:/opt/airflow/models
-    command: bash -c "apt-get update -qq && apt-get install -y -qq default-jdk && su airflow -c 'airflow webserver'"
+    command: webserver
     ports:
       - "8083:8080"
     restart: unless-stopped
