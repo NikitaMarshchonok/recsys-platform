@@ -24,7 +24,7 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-arm64
     volumes:
       - ./dags:/opt/airflow/dags
       - ./spark:/opt/airflow/spark
@@ -46,7 +46,7 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-arm64
     volumes:
       - ./dags:/opt/airflow/dags
       - ./spark:/opt/airflow/spark
