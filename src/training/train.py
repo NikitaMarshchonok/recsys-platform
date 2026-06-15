@@ -18,7 +18,7 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel("ERROR")
 
 # MLflow — куда записывать эксперименты
-mlflow.set_tracking_uri("http://localhost:5001")
+mlflow.set_tracking_uri("http://host.docker.internal:5001")
 mlflow.set_experiment("recsys_als")
 
 print("Сессии созданы")
