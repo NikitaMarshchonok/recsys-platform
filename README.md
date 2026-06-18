@@ -1,67 +1,102 @@
 # RecSys Platform
 
-Production-grade movie recommendation system built with modern MLOps stack.
+Educational MLOps project for a movie recommendation system.
+
+The project demonstrates a full recommendation workflow: data generation,
+Spark feature engineering, ALS model training, experiment tracking, API
+serving, request logging, orchestration, and automated tests.
 
 ## Architecture
-Raw Data → Spark Feature Engineering → ALS Model Training → FastAPI Service
-↓
-MLflow Tracking
-↓
-PostgreSQL Logging
+
+```text
+Raw Data
+  -> Spark Feature Engineering
+  -> ALS Model Training
+  -> FastAPI Recommendation Service
+  -> PostgreSQL Request Logging
+
+MLflow tracks training parameters and metrics.
+Airflow can orchestrate the feature and training pipeline.
+```
 
 ## Stack
 
-- **Apache Spark** — distributed feature engineering
-- **PySpark ALS** — collaborative filtering model
-- **MLflow** — experiment tracking and model registry
-- **FastAPI** — REST API for recommendations
-- **PostgreSQL** — request logging and observability
-- **pytest** — automated API testing
-- **Docker Compose** — infrastructure as code
+- Apache Spark / PySpark - feature engineering and ALS model training
+- FastAPI - REST API for recommendations
+- MLflow - experiment tracking
+- PostgreSQL - request logging and API statistics
+- Airflow - scheduled training pipeline
+- Docker Compose - local infrastructure
+- pytest - automated API tests
 
 ## Project Structure
+
+```text
 recsys-platform/
 ├── data/
-│   ├── raw/          # generated dataset (500 users, 200 movies, 18k ratings)
-│   └── processed/    # spark feature engineering output
-├── spark/jobs/       # feature engineering pipeline
+│   ├── raw/          # generated movie, user, and rating data
+│   └── processed/    # feature engineering outputs
+├── spark/jobs/       # Spark feature engineering pipeline
 ├── src/
-│   ├── api/          # FastAPI recommendation service
-│   └── training/     # ALS model training with MLflow
-├── tests/            # pytest API tests
+│   ├── api/          # FastAPI service
+│   └── training/     # ALS training script
+├── dags/             # Airflow DAG
 ├── models/           # saved ALS model
+├── tests/            # API tests
 └── docker-compose.yml
+```
 
 ## Quick Start
 
+Create and activate a virtual environment:
+
 ```bash
-# 1. Start infrastructure
-docker compose up -d
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-# 2. Generate data
+Generate sample data:
+
+```bash
 python scripts/generate_data.py
+```
 
-# 3. Run Spark feature engineering
-export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+Run feature engineering:
+
+```bash
 python spark/jobs/feature_engineering.py
+```
 
-# 4. Train model
-python src/training/train.py
+Train the ALS model:
 
-# 5. Start API
+```bash
+MLFLOW_TRACKING_URI=file:./mlruns python src/training/train.py
+```
+
+Start the API:
+
+```bash
 uvicorn src.api.main:app --port 8001
+```
+
+Run tests:
+
+```bash
+python -m pytest
 ```
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /health | Service health check |
-| POST | /recommend | Get personalized recommendations |
-| GET | /similar_movies/{id} | Get similar movies by genre |
-| GET | /stats | Request statistics |
+| --- | --- | --- |
+| GET | `/` | Root status message |
+| GET | `/health` | Lightweight health check |
+| POST | `/recommend` | Personalized movie recommendations |
+| GET | `/similar_movies/{movie_id}` | Similar movies by genre |
+| GET | `/stats` | Request statistics from PostgreSQL |
 
-## Example Request
+Example recommendation request:
 
 ```bash
 curl -X POST "http://localhost:8001/recommend" \
@@ -69,12 +104,42 @@ curl -X POST "http://localhost:8001/recommend" \
   -d '{"user_id": 1, "n_recommendations": 5}'
 ```
 
-## Results
+## Docker Infrastructure
 
-- RMSE: 1.05 on test set
-- Average API response time: ~1.4s (local Spark)
-- 3 automated tests covering core functionality
+Start PostgreSQL and Airflow services:
+
+```bash
+docker compose up -d
+```
+
+Airflow UI is available at:
+
+```text
+http://localhost:8083
+```
+
+Default credentials:
+
+```text
+username: admin
+password: admin
+```
+
+## Notes
+
+- The API loads Spark and the ALS model lazily when `/recommend` is called.
+- PostgreSQL logging is optional: the API still works if the database is not running.
+- Fast API tests mock the ML resources, so they run quickly without starting Spark.
+- The full ML workflow is covered by the data generation, feature engineering, and training scripts.
+
+## Current Results
+
+- Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
+- ALS model saved to `models/als_model`
+- API tests: 3 passing tests for health, valid recommendations, and invalid users
 
 ## Author
+
 Nikita Marshchonok
-telegram: @nikitamarshchonok
+
+Telegram: `@nikitamarshchonok`

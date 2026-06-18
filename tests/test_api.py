@@ -1,10 +1,51 @@
 import pytest
+import pandas as pd
 from fastapi.testclient import TestClient
+import src.api.main as api_module
 from src.api.main import app
 
 # TestClient — это виртуальный браузер для тестов
 # он отправляет запросы к API без реального сервера
 client = TestClient(app)
+
+
+class FakeSpark:
+    def createDataFrame(self, data, columns):
+        return {"data": data, "columns": columns}
+
+
+class FakeRecommendations:
+    def collect(self):
+        return [{
+            "recommendations": [
+                {"movieId": 1, "rating": 4.8},
+                {"movieId": 2, "rating": 4.5},
+                {"movieId": 3, "rating": 4.2},
+                {"movieId": 4, "rating": 4.0},
+                {"movieId": 5, "rating": 3.9},
+            ]
+        }]
+
+
+class FakeModel:
+    def recommendForUserSubset(self, user_df, n_recommendations):
+        return FakeRecommendations()
+
+
+@pytest.fixture(autouse=True)
+def mock_api_resources(monkeypatch):
+    movies = pd.DataFrame({
+        "movieId": [1, 2, 3, 4, 5],
+        "title": ["Movie 1", "Movie 2", "Movie 3", "Movie 4", "Movie 5"],
+        "genres": ["Drama", "Comedy", "Action", "Sci-Fi", "Thriller"],
+    })
+
+    monkeypatch.setattr(api_module, "init_db", lambda: None)
+    monkeypatch.setattr(
+        api_module,
+        "load_recommendation_resources",
+        lambda: (FakeSpark(), FakeModel(), movies, {1}),
+    )
 
 
 def test_health():

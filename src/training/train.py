@@ -18,7 +18,9 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel("ERROR")
 
 # MLflow — куда записывать эксперименты
-mlflow.set_tracking_uri("http://host.docker.internal:5001")
+mlflow.set_tracking_uri(
+    os.getenv("MLFLOW_TRACKING_URI", "http://host.docker.internal:5001")
+)
 mlflow.set_experiment("recsys_als")
 
 print("Сессии созданы")
@@ -27,7 +29,7 @@ print("Сессии созданы")
 ratings = spark.read \
     .option("header", "true") \
     .option("inferSchema", "true") \
-    .csv("data/raw/rating.csv")
+    .csv("data/raw/ratings.csv")
 
 # Берём 20% данных для обучения на локальной машине
 ratings = ratings.sample(fraction=0.2, seed=42)

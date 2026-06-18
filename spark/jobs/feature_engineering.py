@@ -17,12 +17,12 @@ print('Spark Session created succsessfully')
 ratings = spark.read \
     .option("header", "true") \
     .option("inferSchema", "true") \
-    .csv("data/raw/rating.csv")
+    .csv("data/raw/ratings.csv")
 
 movies = spark.read \
     .option("header", "true") \
     .option("inferSchema", "true") \
-    .csv("data/raw/movie.csv")
+    .csv("data/raw/movies.csv")
 
 users = spark.read \
     .option("header", "true") \

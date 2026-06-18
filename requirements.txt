@@ -6,3 +6,6 @@ pandas==2.3.1
 mlflow==2.11.1
 scikit-learn==1.8.0
 numpy==2.4.5
+psycopg2-binary==2.9.11
+pytest==9.0.2
+httpx==0.28.1

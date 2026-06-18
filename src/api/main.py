@@ -1,11 +1,19 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from pyspark.sql import SparkSession
-from pyspark.ml.recommendation import ALSModel
 import pandas as pd
-import psycopg2
 import time
-from datetime import datetime
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+MODEL_PATH = BASE_DIR / "models" / "als_model"
+MOVIES_PATH = BASE_DIR / "data" / "raw" / "movies.csv"
+USERS_PATH = BASE_DIR / "data" / "raw" / "users.csv"
+MOVIE_FEATURES_PATH = BASE_DIR / "data" / "processed" / "movie_features.csv"
+
+spark = None
+model = None
+movies = None
+valid_user_ids = None
 
 # Создаём приложение
 app = FastAPI(
@@ -14,21 +22,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Запускаем Spark и загружаем модель при старте
-spark = SparkSession.builder \
-    .appName("RecSys API") \
-    .master("local[*]") \
-    .getOrCreate()
-
-spark.sparkContext.setLogLevel("ERROR")
-
-# Загружаем обученную модель
-model = ALSModel.load("models/als_model")
-
-# Загружаем список фильмов
-movies = pd.read_csv("data/raw/movies.csv")
 
 def get_db_connection():
+    import psycopg2
+
     return psycopg2.connect(
         host="localhost",
         database="recsys",
@@ -38,27 +35,48 @@ def get_db_connection():
     )
 
 def init_db():
-    conn = get_db_connection()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS request_logs (
-                    id SERIAL PRIMARY KEY,
-                    endpoint VARCHAR(50),
-                    user_id INTEGER,
-                    n_recommendations INTEGER,
-                    response_time_ms FLOAT,
-                    n_results INTEGER,
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
-    conn.close()
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS request_logs (
+                        id SERIAL PRIMARY KEY,
+                        endpoint VARCHAR(50),
+                        user_id INTEGER,
+                        n_recommendations INTEGER,
+                        response_time_ms FLOAT,
+                        n_results INTEGER,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+        conn.close()
+    except Exception as e:
+        print(f"PostgreSQL недоступен, логирование отключено: {e}")
 
-# Создаём таблицу при старте
-init_db()
-print("База данных инициализирована")
 
-print("API готов к работе!")
+def load_recommendation_resources():
+    global spark, model, movies, valid_user_ids
+
+    if spark is None or model is None:
+        from pyspark.sql import SparkSession
+        from pyspark.ml.recommendation import ALSModel
+
+        spark = SparkSession.builder \
+            .appName("RecSys API") \
+            .master("local[*]") \
+            .getOrCreate()
+        spark.sparkContext.setLogLevel("ERROR")
+        model = ALSModel.load(str(MODEL_PATH))
+
+    if movies is None:
+        movies = pd.read_csv(MOVIES_PATH)
+
+    if valid_user_ids is None:
+        users = pd.read_csv(USERS_PATH)
+        valid_user_ids = set(users["userId"].astype(int))
+
+    return spark, model, movies, valid_user_ids
 
 # Схема запроса — что принимаем
 class RecommendRequest(BaseModel):
@@ -87,28 +105,38 @@ def health():
 def recommend(request: RecommendRequest):
     start_time = time.time()  # начинаем замер времени
 
-    if request.user_id < 1 or request.user_id > 138493:
+    init_db()
+    spark_session, als_model, movie_catalog, users = load_recommendation_resources()
+
+    if request.user_id not in users:
         raise HTTPException(
             status_code=404,
             detail=f"Пользователь {request.user_id} не найден"
         )
 
-    user_df = spark.createDataFrame(
+    user_df = spark_session.createDataFrame(
         [(request.user_id,)],
         ["userId"]
     )
 
-    recs = model.recommendForUserSubset(
+    recs = als_model.recommendForUserSubset(
         user_df,
         request.n_recommendations
     )
 
-    recs_list = recs.collect()[0]["recommendations"]
+    rows = recs.collect()
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Для пользователя {request.user_id} нет рекомендаций"
+        )
+
+    recs_list = rows[0]["recommendations"]
 
     result = []
     for rec in recs_list:
         movie_id = rec["movieId"]
-        movie_info = movies[movies["movieId"] == movie_id].iloc[0]
+        movie_info = movie_catalog[movie_catalog["movieId"] == movie_id].iloc[0]
         result.append(MovieRecommendation(
             movie_id=movie_id,
             title=movie_info["title"],
@@ -142,7 +170,7 @@ def recommend(request: RecommendRequest):
 
 @app.get("/similar_movies/{movie_id}")
 def similar_movies(movie_id: int, n: int = 5):
-    movie_features = pd.read_csv("data/processed/movie_features.csv")
+    movie_features = pd.read_csv(MOVIE_FEATURES_PATH)
     
     # Проверяем что фильм существует
     target = movie_features[movie_features["movieId"] == movie_id]

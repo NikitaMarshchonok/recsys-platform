@@ -20,9 +20,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install fastapi uvicorn pydantic pytest httpx \
-            pyspark pandas numpy scikit-learn psycopg2-binary
+        run: pip install -r requirements.txt
 
       - name: Set up Java
         uses: actions/setup-java@v4
