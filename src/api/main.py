@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, Field
 import pandas as pd
 import time
 from pathlib import Path
@@ -81,7 +81,12 @@ def load_recommendation_resources():
 # Схема запроса — что принимаем
 class RecommendRequest(BaseModel):
     user_id: int
-    n_recommendations: int = 10  # по умолчанию 10 фильмов
+    n_recommendations: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Количество рекомендаций от 1 до 50",
+    )
 
 # Схема ответа — что возвращаем
 class MovieRecommendation(BaseModel):
@@ -169,7 +174,7 @@ def recommend(request: RecommendRequest):
 
 
 @app.get("/similar_movies/{movie_id}")
-def similar_movies(movie_id: int, n: int = 5):
+def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
     movie_features = pd.read_csv(MOVIE_FEATURES_PATH)
     
     # Проверяем что фильм существует

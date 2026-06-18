@@ -74,3 +74,11 @@ def test_recommend_invalid_user():
         json={"user_id": 9999, "n_recommendations": 5}
     )
     assert response.status_code == 404
+
+
+def test_recommend_invalid_limit():
+    response = client.post(
+        "/recommend",
+        json={"user_id": 1, "n_recommendations": 0}
+    )
+    assert response.status_code == 422
