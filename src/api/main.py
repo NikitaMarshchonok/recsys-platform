@@ -137,6 +137,13 @@ class ReadinessResponse(BaseModel):
     status: str
     checks: dict[str, bool]
 
+
+class StatsResponse(BaseModel):
+    total_requests: int
+    avg_response_ms: float
+    min_response_ms: float
+    max_response_ms: float
+
 # Главная страница — проверка что API работает
 @app.get("/")
 def root():
@@ -260,7 +267,7 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
         for _, row in similar.iterrows()
     ]
 
-@app.get("/stats")
+@app.get("/stats", response_model=StatsResponse)
 def stats():
     try:
         conn = get_db_connection()

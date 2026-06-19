@@ -32,6 +32,28 @@ class FakeModel:
         return FakeRecommendations()
 
 
+class FakeCursor:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def execute(self, query):
+        self.query = query
+
+    def fetchone(self):
+        return (12, 42.4, 10.1, 88.9)
+
+
+class FakeConnection:
+    def cursor(self):
+        return FakeCursor()
+
+    def close(self):
+        pass
+
+
 @pytest.fixture(autouse=True)
 def mock_api_resources(monkeypatch):
     movies = pd.DataFrame({
@@ -46,6 +68,20 @@ def mock_api_resources(monkeypatch):
         "load_recommendation_resources",
         lambda: (FakeSpark(), FakeModel(), movies, {1}),
     )
+
+
+def test_stats_response(monkeypatch):
+    monkeypatch.setattr(api_module, "get_db_connection", lambda: FakeConnection())
+
+    response = client.get("/stats")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_requests": 12,
+        "avg_response_ms": 42.4,
+        "min_response_ms": 10.1,
+        "max_response_ms": 88.9,
+    }
 
 
 def test_health():
