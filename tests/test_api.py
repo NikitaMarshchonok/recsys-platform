@@ -54,6 +54,12 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
+def test_readiness():
+    response = client.get("/ready")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+
+
 def test_recommend_valid_user():
     response = client.post(
         "/recommend",

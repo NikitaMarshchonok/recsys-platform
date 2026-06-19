@@ -93,6 +93,7 @@ python -m pytest
 | --- | --- | --- |
 | GET | `/` | Root status message |
 | GET | `/health` | Lightweight health check |
+| GET | `/ready` | Readiness check for model and data artifacts |
 | POST | `/recommend` | Personalized movie recommendations |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
 | GET | `/stats` | Request statistics from PostgreSQL |
@@ -104,6 +105,28 @@ curl -X POST "http://localhost:8001/recommend" \
   -H "Content-Type: application/json" \
   -d '{"user_id": 1, "n_recommendations": 5}'
 ```
+
+Readiness check:
+
+```bash
+curl "http://localhost:8001/ready"
+```
+
+## Runtime Configuration
+
+The API can be configured through environment variables:
+
+| Variable | Default |
+| --- | --- |
+| `RECSYS_MODEL_PATH` | `models/als_model` |
+| `RECSYS_MOVIES_PATH` | `data/raw/movies.csv` |
+| `RECSYS_USERS_PATH` | `data/raw/users.csv` |
+| `RECSYS_MOVIE_FEATURES_PATH` | `data/processed/movie_features.csv` |
+| `RECSYS_DB_HOST` | `localhost` |
+| `RECSYS_DB_NAME` | `recsys` |
+| `RECSYS_DB_USER` | `recsys` |
+| `RECSYS_DB_PASSWORD` | `recsys` |
+| `RECSYS_DB_PORT` | `5434` |
 
 ## Docker Infrastructure
 
@@ -129,6 +152,7 @@ password: admin
 ## Notes
 
 - The API loads Spark and the ALS model lazily when `/recommend` is called.
+- `/health` checks that the API process is alive; `/ready` checks that model and data artifacts exist.
 - PostgreSQL logging is optional: the API still works if the database is not running.
 - Fast API tests mock the ML resources, so they run quickly without starting Spark.
 - The full ML workflow is covered by the data generation, feature engineering, and training scripts.
@@ -138,7 +162,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 3 passing tests for health, valid recommendations, and invalid users
+- API tests: 5 passing tests for health, readiness, valid recommendations, invalid users, and request validation
 
 ## Author
 

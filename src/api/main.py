@@ -2,13 +2,10 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 import pandas as pd
 import time
-from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-MODEL_PATH = BASE_DIR / "models" / "als_model"
-MOVIES_PATH = BASE_DIR / "data" / "raw" / "movies.csv"
-USERS_PATH = BASE_DIR / "data" / "raw" / "users.csv"
-MOVIE_FEATURES_PATH = BASE_DIR / "data" / "processed" / "movie_features.csv"
+from src.api.config import get_settings
+
+settings = get_settings()
 
 spark = None
 model = None
@@ -27,11 +24,11 @@ def get_db_connection():
     import psycopg2
 
     return psycopg2.connect(
-        host="localhost",
-        database="recsys",
-        user="recsys",
-        password="recsys",
-        port=5434,
+        host=settings.db_host,
+        database=settings.db_name,
+        user=settings.db_user,
+        password=settings.db_password,
+        port=settings.db_port,
     )
 
 def init_db():
@@ -67,13 +64,13 @@ def load_recommendation_resources():
             .master("local[*]") \
             .getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
-        model = ALSModel.load(str(MODEL_PATH))
+        model = ALSModel.load(str(settings.model_path))
 
     if movies is None:
-        movies = pd.read_csv(MOVIES_PATH)
+        movies = pd.read_csv(settings.movies_path)
 
     if valid_user_ids is None:
-        users = pd.read_csv(USERS_PATH)
+        users = pd.read_csv(settings.users_path)
         valid_user_ids = set(users["userId"].astype(int))
 
     return spark, model, movies, valid_user_ids
@@ -95,6 +92,11 @@ class MovieRecommendation(BaseModel):
     genres: str
     predicted_rating: float
 
+
+class ReadinessResponse(BaseModel):
+    status: str
+    checks: dict[str, bool]
+
 # Главная страница — проверка что API работает
 @app.get("/")
 def root():
@@ -104,6 +106,24 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/ready", response_model=ReadinessResponse)
+def readiness():
+    checks = {
+        "model": settings.model_path.exists(),
+        "movies": settings.movies_path.exists(),
+        "users": settings.users_path.exists(),
+        "movie_features": settings.movie_features_path.exists(),
+    }
+
+    if not all(checks.values()):
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "not_ready", "checks": checks},
+        )
+
+    return {"status": "ready", "checks": checks}
 
 
 @app.post("/recommend", response_model=list[MovieRecommendation])
@@ -175,7 +195,7 @@ def recommend(request: RecommendRequest):
 
 @app.get("/similar_movies/{movie_id}")
 def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
-    movie_features = pd.read_csv(MOVIE_FEATURES_PATH)
+    movie_features = pd.read_csv(settings.movie_features_path)
     
     # Проверяем что фильм существует
     target = movie_features[movie_features["movieId"] == movie_id]
