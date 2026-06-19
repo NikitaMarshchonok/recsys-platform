@@ -1,11 +1,15 @@
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
+import logging
 import pandas as pd
 import time
+import uuid
 
 from src.api.config import get_settings
 
 settings = get_settings()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("recsys.api")
 
 spark = None
 model = None
@@ -18,6 +22,42 @@ app = FastAPI(
     description="Рекомендательная система фильмов",
     version="1.0.0",
 )
+
+
+@app.middleware("http")
+async def request_tracing_middleware(request, call_next):
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    start_time = time.perf_counter()
+    status_code = 500
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+    except Exception:
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        logger.exception(
+            "request_failed request_id=%s method=%s path=%s status_code=%s latency_ms=%.2f",
+            request_id,
+            request.method,
+            request.url.path,
+            status_code,
+            latency_ms,
+        )
+        raise
+
+    latency_ms = (time.perf_counter() - start_time) * 1000
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Response-Time-ms"] = f"{latency_ms:.2f}"
+    logger.info(
+        "request_completed request_id=%s method=%s path=%s status_code=%s latency_ms=%.2f",
+        request_id,
+        request.method,
+        request.url.path,
+        status_code,
+        latency_ms,
+    )
+
+    return response
 
 
 def get_db_connection():

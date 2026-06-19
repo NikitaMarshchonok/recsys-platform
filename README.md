@@ -153,6 +153,7 @@ password: admin
 
 - The API loads Spark and the ALS model lazily when `/recommend` is called.
 - `/health` checks that the API process is alive; `/ready` checks that model and data artifacts exist.
+- Every API response includes `X-Request-ID` and `X-Response-Time-ms` headers for tracing.
 - PostgreSQL logging is optional: the API still works if the database is not running.
 - Fast API tests mock the ML resources, so they run quickly without starting Spark.
 - The full ML workflow is covered by the data generation, feature engineering, and training scripts.
@@ -162,7 +163,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 5 passing tests for health, readiness, valid recommendations, invalid users, and request validation
+- API tests: 6 passing tests for health, readiness, tracing, valid recommendations, invalid users, and request validation
 
 ## Author
 

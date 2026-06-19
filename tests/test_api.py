@@ -54,6 +54,12 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
+def test_request_tracing_headers():
+    response = client.get("/health", headers={"X-Request-ID": "test-request"})
+    assert response.headers["X-Request-ID"] == "test-request"
+    assert float(response.headers["X-Response-Time-ms"]) >= 0
+
+
 def test_readiness():
     response = client.get("/ready")
     assert response.status_code == 200
