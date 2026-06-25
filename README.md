@@ -170,6 +170,7 @@ password: admin
 
 - The API loads Spark and the ALS model lazily when `/recommend` is called.
 - `/health` checks that the API process is alive; `/ready` checks that model and data artifacts exist.
+- The API Docker image includes a container healthcheck against `/health`.
 - Every API response includes `X-Request-ID` and `X-Response-Time-ms` headers for tracing.
 - PostgreSQL logging is optional: the API still works if the database is not running.
 - Fast API tests mock the ML resources, so they run quickly without starting Spark.
