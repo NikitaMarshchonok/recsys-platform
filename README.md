@@ -94,6 +94,14 @@ Run tests:
 python -m pytest
 ```
 
+Common commands are also available through `make`:
+
+```bash
+make test
+make pipeline
+make run-api
+```
+
 CI runs fast API tests separately from the heavier ML pipeline smoke check.
 
 ## API Endpoints
