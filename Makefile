@@ -3,7 +3,19 @@ JAVA_HOME ?= /opt/homebrew/opt/openjdk@17
 MLFLOW_TRACKING_URI ?= file:./mlruns
 API_PORT ?= 8001
 
-.PHONY: install test generate-data features train pipeline run-api docker-up docker-down
+.PHONY: help install test generate-data features train pipeline run-api docker-up docker-down
+
+help:
+	@echo "Available commands:"
+	@echo "  make install        Install Python dependencies"
+	@echo "  make test           Run fast API tests"
+	@echo "  make generate-data  Generate synthetic ratings data"
+	@echo "  make features       Run Spark feature engineering"
+	@echo "  make train          Train the ALS model"
+	@echo "  make pipeline       Run data generation, features, and training"
+	@echo "  make run-api        Start the FastAPI service"
+	@echo "  make docker-up      Start Docker Compose services"
+	@echo "  make docker-down    Stop Docker Compose services"
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
