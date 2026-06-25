@@ -1,0 +1,16 @@
+.git
+.github
+.pytest_cache
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+.env
+mlruns
+logs
+
+.DS_Store
+notebooks/.ipynb_checkpoints
+tests/.pytest_cache
