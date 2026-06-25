@@ -56,6 +56,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Create local environment settings:
+
+```bash
+cp .env.example .env
+```
+
 Generate sample data:
 
 ```bash
