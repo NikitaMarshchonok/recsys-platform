@@ -28,6 +28,7 @@ Airflow can orchestrate the feature and training pipeline.
 - Airflow - scheduled training pipeline
 - Docker Compose - local infrastructure
 - pytest - automated API tests
+- GitHub Actions - fast API tests and ML pipeline smoke checks
 
 ## Project Structure
 
@@ -92,6 +93,8 @@ Run tests:
 ```bash
 python -m pytest
 ```
+
+CI runs fast API tests separately from the heavier ML pipeline smoke check.
 
 ## API Endpoints
 

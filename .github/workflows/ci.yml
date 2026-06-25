@@ -5,9 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  test:
+  fast-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,11 +23,29 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Run fast API tests
+        run: python -m pytest tests/ -v
+
+  ml-pipeline-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Generate test data
         run: python scripts/generate_data.py
@@ -38,6 +57,3 @@ jobs:
         run: python src/training/train.py
         env:
           MLFLOW_TRACKING_URI: "file:./mlruns"
-
-      - name: Run tests
-        run: python -m pytest tests/ -v
