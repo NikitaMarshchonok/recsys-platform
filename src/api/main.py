@@ -125,6 +125,17 @@ class RecommendRequest(BaseModel):
         description="Количество рекомендаций от 1 до 50",
     )
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "user_id": 1,
+                    "n_recommendations": 5,
+                }
+            ]
+        }
+    }
+
 # Схема ответа — что возвращаем
 class MovieRecommendation(BaseModel):
     movie_id: int

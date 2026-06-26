@@ -116,6 +116,13 @@ def test_recommend_valid_user():
     assert "predicted_rating" in data[0]
 
 
+def test_recommend_openapi_example_uses_valid_user():
+    schema = app.openapi()
+    example = schema["components"]["schemas"]["RecommendRequest"]["examples"][0]
+
+    assert example == {"user_id": 1, "n_recommendations": 5}
+
+
 def test_recommend_invalid_user():
     response = client.post(
         "/recommend",

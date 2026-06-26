@@ -104,6 +104,41 @@ make run-api
 
 CI runs fast API tests separately from the heavier ML pipeline smoke check.
 
+## Demo API Flow
+
+Start the API:
+
+```bash
+make run-api
+```
+
+Open Swagger UI:
+
+```text
+http://127.0.0.1:8001/docs
+```
+
+Check that the API process is alive:
+
+```text
+GET /health
+```
+
+Check that model and data artifacts are available:
+
+```text
+GET /ready
+```
+
+Request personalized recommendations:
+
+```json
+{
+  "user_id": 1,
+  "n_recommendations": 5
+}
+```
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
