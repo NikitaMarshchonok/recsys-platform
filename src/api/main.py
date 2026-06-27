@@ -176,6 +176,15 @@ class StatsResponse(BaseModel):
     min_response_ms: float
     max_response_ms: float
 
+
+class MetricsResponse(BaseModel):
+    spark_loaded: bool
+    model_loaded: bool
+    movie_catalog_loaded: bool
+    user_catalog_loaded: bool
+    cached_movies: int
+    cached_users: int
+
 # Главная страница — проверка что API работает
 @app.get("/", response_model=RootResponse)
 def root():
@@ -208,6 +217,18 @@ def readiness():
         )
 
     return {"status": "ready", "checks": checks}
+
+
+@app.get("/metrics", response_model=MetricsResponse)
+def metrics():
+    return {
+        "spark_loaded": spark is not None,
+        "model_loaded": model is not None,
+        "movie_catalog_loaded": movies is not None,
+        "user_catalog_loaded": valid_user_ids is not None,
+        "cached_movies": 0 if movies is None else len(movies),
+        "cached_users": 0 if valid_user_ids is None else len(valid_user_ids),
+    }
 
 
 @app.post("/recommend", response_model=list[MovieRecommendation])

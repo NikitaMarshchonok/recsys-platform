@@ -116,6 +116,25 @@ def test_readiness():
     assert response.json()["status"] == "ready"
 
 
+def test_metrics(monkeypatch):
+    monkeypatch.setattr(api_module, "spark", object())
+    monkeypatch.setattr(api_module, "model", object())
+    monkeypatch.setattr(api_module, "movies", pd.DataFrame({"movieId": [1, 2, 3]}))
+    monkeypatch.setattr(api_module, "valid_user_ids", {1, 2})
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "spark_loaded": True,
+        "model_loaded": True,
+        "movie_catalog_loaded": True,
+        "user_catalog_loaded": True,
+        "cached_movies": 3,
+        "cached_users": 2,
+    }
+
+
 def test_recommend_valid_user():
     response = client.post(
         "/recommend",
