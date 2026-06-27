@@ -90,6 +90,13 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
+def test_root_response():
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "message": "RecSys API работает"}
+
+
 def test_version():
     response = client.get("/version")
 
@@ -128,6 +135,17 @@ def test_recommend_openapi_example_uses_valid_user():
     example = schema["components"]["schemas"]["RecommendRequest"]["examples"][0]
 
     assert example == {"user_id": 1, "n_recommendations": 5}
+
+
+def test_openapi_has_root_and_health_response_schemas():
+    schema = app.openapi()
+
+    assert schema["paths"]["/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/RootResponse"
+    }
+    assert schema["paths"]["/health"]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/HealthResponse"
+    }
 
 
 def test_recommend_invalid_user():

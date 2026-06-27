@@ -144,6 +144,15 @@ class MovieRecommendation(BaseModel):
     predicted_rating: float
 
 
+class RootResponse(BaseModel):
+    status: str
+    message: str
+
+
+class HealthResponse(BaseModel):
+    status: str
+
+
 class ReadinessResponse(BaseModel):
     status: str
     checks: dict[str, bool]
@@ -161,12 +170,12 @@ class StatsResponse(BaseModel):
     max_response_ms: float
 
 # Главная страница — проверка что API работает
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 def root():
     return {"status": "ok", "message": "RecSys API работает"}
 
 # Эндпоинт здоровья — для мониторинга
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 def health():
     return {"status": "healthy"}
 
