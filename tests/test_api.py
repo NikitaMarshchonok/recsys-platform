@@ -137,6 +137,35 @@ def test_recommend_openapi_example_uses_valid_user():
     assert example == {"user_id": 1, "n_recommendations": 5}
 
 
+def test_similar_movies_response(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Drama", "Drama", "Comedy"],
+        "avg_rating": [4.2, 4.8, 3.9],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/similar_movies/1?n=2")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"movie_id": 2, "title": "Movie 2", "genres": "Drama", "avg_rating": 4.8},
+        {"movie_id": 1, "title": "Movie 1", "genres": "Drama", "avg_rating": 4.2},
+    ]
+
+
+def test_similar_movies_openapi_response_schema():
+    schema = app.openapi()
+
+    assert schema["paths"]["/similar_movies/{movie_id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "items": {"$ref": "#/components/schemas/SimilarMovieResponse"},
+        "type": "array",
+        "title": "Response Similar Movies Similar Movies  Movie Id  Get",
+    }
+
+
 def test_openapi_has_root_and_health_response_schemas():
     schema = app.openapi()
 

@@ -144,6 +144,13 @@ class MovieRecommendation(BaseModel):
     predicted_rating: float
 
 
+class SimilarMovieResponse(BaseModel):
+    movie_id: int
+    title: str
+    genres: str
+    avg_rating: float
+
+
 class RootResponse(BaseModel):
     status: str
     message: str
@@ -270,7 +277,7 @@ def recommend(request: RecommendRequest):
     return result
 
 
-@app.get("/similar_movies/{movie_id}")
+@app.get("/similar_movies/{movie_id}", response_model=list[SimilarMovieResponse])
 def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
     movie_features = pd.read_csv(settings.movie_features_path)
     
