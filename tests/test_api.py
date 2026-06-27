@@ -90,6 +90,13 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
+def test_version():
+    response = client.get("/version")
+
+    assert response.status_code == 200
+    assert response.json() == {"service": "RecSys API", "version": "1.0.0"}
+
+
 def test_request_tracing_headers():
     response = client.get("/health", headers={"X-Request-ID": "test-request"})
     assert response.headers["X-Request-ID"] == "test-request"

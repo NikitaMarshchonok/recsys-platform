@@ -149,6 +149,11 @@ class ReadinessResponse(BaseModel):
     checks: dict[str, bool]
 
 
+class VersionResponse(BaseModel):
+    service: str
+    version: str
+
+
 class StatsResponse(BaseModel):
     total_requests: int
     avg_response_ms: float
@@ -164,6 +169,11 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/version", response_model=VersionResponse)
+def version():
+    return {"service": app.title, "version": app.version}
 
 
 @app.get("/ready", response_model=ReadinessResponse)
