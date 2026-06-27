@@ -218,6 +218,30 @@ password: admin
 - ALS model saved to `models/als_model`
 - API tests: 6 passing tests for health, readiness, tracing, valid recommendations, invalid users, and request validation
 
+## Project Status
+
+Implemented:
+
+- Synthetic data generation
+- Spark feature engineering
+- ALS model training
+- MLflow experiment tracking
+- FastAPI recommendation serving
+- Request tracing and latency headers
+- Health and readiness checks
+- PostgreSQL request logging
+- Airflow DAG for scheduled pipeline runs
+- Docker, Makefile commands, and GitHub Actions CI
+
+Future improvements:
+
+- Real MovieLens dataset versioning
+- Offline ranking metrics such as precision@k and recall@k
+- Model registry promotion flow
+- Batch recommendation cache
+- Authentication and rate limiting
+- Deployment manifests for a cloud runtime
+
 ## Author
 
 Nikita Marshchonok
