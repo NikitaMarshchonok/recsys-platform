@@ -166,6 +166,30 @@ Readiness check:
 curl "http://localhost:8001/ready"
 ```
 
+## API Error Responses
+
+Unknown users return `404`:
+
+```json
+{
+  "detail": "Пользователь 9999 не найден"
+}
+```
+
+Invalid request limits return `422`:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "n_recommendations"],
+      "msg": "Input should be greater than or equal to 1",
+      "type": "greater_than_equal"
+    }
+  ]
+}
+```
+
 ## Runtime Configuration
 
 The API can be configured through environment variables:
