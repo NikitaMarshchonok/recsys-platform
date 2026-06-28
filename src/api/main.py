@@ -151,6 +151,14 @@ class SimilarMovieResponse(BaseModel):
     avg_rating: float
 
 
+class TopMovieResponse(BaseModel):
+    movie_id: int
+    title: str
+    genres: str
+    avg_rating: float
+    total_ratings: int
+
+
 class RootResponse(BaseModel):
     status: str
     message: str
@@ -324,6 +332,28 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
         }
         for _, row in similar.iterrows()
     ]
+
+
+@app.get("/movies/top", response_model=list[TopMovieResponse])
+def top_movies(n: int = Query(default=10, ge=1, le=50)):
+    movie_features = pd.read_csv(settings.movie_features_path)
+
+    top = movie_features.sort_values(
+        ["avg_rating", "total_ratings"],
+        ascending=[False, False],
+    ).head(n)
+
+    return [
+        {
+            "movie_id": int(row["movieId"]),
+            "title": row["title"],
+            "genres": row["genres"],
+            "avg_rating": round(row["avg_rating"], 2),
+            "total_ratings": int(row["total_ratings"]),
+        }
+        for _, row in top.iterrows()
+    ]
+
 
 @app.get("/stats", response_model=StatsResponse)
 def stats():

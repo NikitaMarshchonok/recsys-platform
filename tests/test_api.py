@@ -185,6 +185,36 @@ def test_similar_movies_openapi_response_schema():
     }
 
 
+def test_top_movies_response(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Drama", "Action", "Comedy"],
+        "avg_rating": [4.5, 4.8, 4.8],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/top?n=2")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"movie_id": 3, "title": "Movie 3", "genres": "Comedy", "avg_rating": 4.8, "total_ratings": 120},
+        {"movie_id": 2, "title": "Movie 2", "genres": "Action", "avg_rating": 4.8, "total_ratings": 80},
+    ]
+
+
+def test_top_movies_openapi_response_schema():
+    schema = app.openapi()
+
+    assert schema["paths"]["/movies/top"]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "items": {"$ref": "#/components/schemas/TopMovieResponse"},
+        "type": "array",
+        "title": "Response Top Movies Movies Top Get",
+    }
+
+
 def test_openapi_has_root_and_health_response_schemas():
     schema = app.openapi()
 
