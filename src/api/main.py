@@ -159,6 +159,15 @@ class TopMovieResponse(BaseModel):
     total_ratings: int
 
 
+class UserProfileResponse(BaseModel):
+    user_id: int
+    total_rated: int
+    avg_rating: float
+    rating_stddev: float
+    min_rating: float
+    max_rating: float
+
+
 class RootResponse(BaseModel):
     status: str
     message: str
@@ -215,6 +224,7 @@ def readiness():
         "model": settings.model_path.exists(),
         "movies": settings.movies_path.exists(),
         "users": settings.users_path.exists(),
+        "user_features": settings.user_features_path.exists(),
         "movie_features": settings.movie_features_path.exists(),
     }
 
@@ -353,6 +363,25 @@ def top_movies(n: int = Query(default=10, ge=1, le=50)):
         }
         for _, row in top.iterrows()
     ]
+
+
+@app.get("/users/{user_id}/profile", response_model=UserProfileResponse)
+def user_profile(user_id: int):
+    user_features = pd.read_csv(settings.user_features_path)
+
+    target = user_features[user_features["userId"] == user_id]
+    if target.empty:
+        raise HTTPException(status_code=404, detail=f"Пользователь {user_id} не найден")
+
+    row = target.iloc[0]
+    return {
+        "user_id": int(row["userId"]),
+        "total_rated": int(row["total_rated"]),
+        "avg_rating": round(row["avg_rating"], 2),
+        "rating_stddev": round(row["rating_stddev"], 2),
+        "min_rating": float(row["min_rating"]),
+        "max_rating": float(row["max_rating"]),
+    }
 
 
 @app.get("/stats", response_model=StatsResponse)

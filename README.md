@@ -149,6 +149,7 @@ Request personalized recommendations:
 | GET | `/ready` | Readiness check for model and data artifacts |
 | GET | `/metrics` | Lightweight runtime cache metrics |
 | GET | `/movies/top` | Top-rated movies fallback ranking |
+| GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | POST | `/recommend` | Personalized movie recommendations |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
 | GET | `/stats` | Request statistics from PostgreSQL |
@@ -200,6 +201,7 @@ The API can be configured through environment variables:
 | `RECSYS_MODEL_PATH` | `models/als_model` |
 | `RECSYS_MOVIES_PATH` | `data/raw/movies.csv` |
 | `RECSYS_USERS_PATH` | `data/raw/users.csv` |
+| `RECSYS_USER_FEATURES_PATH` | `data/processed/user_features.csv` |
 | `RECSYS_MOVIE_FEATURES_PATH` | `data/processed/movie_features.csv` |
 | `RECSYS_DB_HOST` | `localhost` |
 | `RECSYS_DB_NAME` | `recsys` |
@@ -243,7 +245,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 16 passing tests for root, health, version, readiness, metrics, tracing, stats, recommendations, top movies, similar movies, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- API tests: 18 passing tests for root, health, version, readiness, metrics, tracing, stats, recommendations, top movies, similar movies, user profiles, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
 
 ## Project Status
 

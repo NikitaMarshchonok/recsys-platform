@@ -215,6 +215,48 @@ def test_top_movies_openapi_response_schema():
     }
 
 
+def test_user_profile_response(monkeypatch):
+    user_features = pd.DataFrame({
+        "userId": [1, 2],
+        "total_rated": [42, 12],
+        "avg_rating": [3.756, 4.1],
+        "rating_stddev": [0.812, 1.2],
+        "min_rating": [1.0, 2.0],
+        "max_rating": [5.0, 5.0],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: user_features)
+
+    response = client.get("/users/1/profile")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "user_id": 1,
+        "total_rated": 42,
+        "avg_rating": 3.76,
+        "rating_stddev": 0.81,
+        "min_rating": 1.0,
+        "max_rating": 5.0,
+    }
+
+
+def test_user_profile_not_found(monkeypatch):
+    user_features = pd.DataFrame({
+        "userId": [1],
+        "total_rated": [42],
+        "avg_rating": [3.75],
+        "rating_stddev": [0.8],
+        "min_rating": [1.0],
+        "max_rating": [5.0],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: user_features)
+
+    response = client.get("/users/999/profile")
+
+    assert response.status_code == 404
+
+
 def test_openapi_has_root_and_health_response_schemas():
     schema = app.openapi()
 
