@@ -148,6 +148,7 @@ Request personalized recommendations:
 | GET | `/version` | Service name and API version |
 | GET | `/ready` | Readiness check for model and data artifacts |
 | GET | `/metrics` | Lightweight runtime cache metrics |
+| GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Top-rated movies fallback ranking, optionally filtered by genre |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | POST | `/recommend` | Personalized movie recommendations |
@@ -245,7 +246,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 19 passing tests for root, health, version, readiness, metrics, tracing, stats, recommendations, top movies, genre-filtered rankings, similar movies, user profiles, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- API tests: 20 passing tests for root, health, version, readiness, metrics, tracing, stats, recommendations, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
 
 ## Project Status
 

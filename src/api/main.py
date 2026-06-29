@@ -159,6 +159,12 @@ class TopMovieResponse(BaseModel):
     total_ratings: int
 
 
+class GenreSummaryResponse(BaseModel):
+    genre: str
+    movie_count: int
+    avg_rating: float
+
+
 class UserProfileResponse(BaseModel):
     user_id: int
     total_rated: int
@@ -370,6 +376,30 @@ def top_movies(
             "total_ratings": int(row["total_ratings"]),
         }
         for _, row in top.iterrows()
+    ]
+
+
+@app.get("/movies/genres", response_model=list[GenreSummaryResponse])
+def movie_genres():
+    movie_features = pd.read_csv(settings.movie_features_path)
+
+    genre_stats = movie_features.groupby("genres").agg(
+        movie_count=("movieId", "count"),
+        avg_rating=("avg_rating", "mean"),
+    ).reset_index()
+
+    genre_stats = genre_stats.sort_values(
+        ["movie_count", "avg_rating", "genres"],
+        ascending=[False, False, True],
+    )
+
+    return [
+        {
+            "genre": row["genres"],
+            "movie_count": int(row["movie_count"]),
+            "avg_rating": round(row["avg_rating"], 2),
+        }
+        for _, row in genre_stats.iterrows()
     ]
 
 
