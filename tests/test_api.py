@@ -205,6 +205,26 @@ def test_top_movies_response(monkeypatch):
     ]
 
 
+def test_top_movies_filters_by_genre(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Drama", "Action", "Drama"],
+        "avg_rating": [4.5, 4.9, 4.8],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/top?n=2&genre=drama")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"movie_id": 3, "title": "Movie 3", "genres": "Drama", "avg_rating": 4.8, "total_ratings": 120},
+        {"movie_id": 1, "title": "Movie 1", "genres": "Drama", "avg_rating": 4.5, "total_ratings": 100},
+    ]
+
+
 def test_top_movies_openapi_response_schema():
     schema = app.openapi()
 

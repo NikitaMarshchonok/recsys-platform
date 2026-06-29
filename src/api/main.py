@@ -345,8 +345,16 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
 
 
 @app.get("/movies/top", response_model=list[TopMovieResponse])
-def top_movies(n: int = Query(default=10, ge=1, le=50)):
+def top_movies(
+    n: int = Query(default=10, ge=1, le=50),
+    genre: str | None = Query(default=None, min_length=1),
+):
     movie_features = pd.read_csv(settings.movie_features_path)
+
+    if genre is not None:
+        movie_features = movie_features[
+            movie_features["genres"].str.lower() == genre.lower()
+        ]
 
     top = movie_features.sort_values(
         ["avg_rating", "total_ratings"],
