@@ -239,6 +239,17 @@ class MetricsResponse(BaseModel):
     cached_movies: int
     cached_users: int
 
+
+class CatalogSummaryResponse(BaseModel):
+    total_movies: int
+    total_genres: int
+    total_ratings: int
+    avg_rating: float
+    min_avg_rating: float
+    max_avg_rating: float
+    most_rated_movie_id: int | None
+    most_rated_title: str | None
+
 # Главная страница — проверка что API работает
 @app.get("/", response_model=RootResponse)
 def root():
@@ -283,6 +294,39 @@ def metrics():
         "user_catalog_loaded": valid_user_ids is not None,
         "cached_movies": 0 if movies is None else len(movies),
         "cached_users": 0 if valid_user_ids is None else len(valid_user_ids),
+    }
+
+
+@app.get("/catalog/summary", response_model=CatalogSummaryResponse)
+def catalog_summary():
+    movie_features = pd.read_csv(settings.movie_features_path)
+
+    if movie_features.empty:
+        return {
+            "total_movies": 0,
+            "total_genres": 0,
+            "total_ratings": 0,
+            "avg_rating": 0.0,
+            "min_avg_rating": 0.0,
+            "max_avg_rating": 0.0,
+            "most_rated_movie_id": None,
+            "most_rated_title": None,
+        }
+
+    most_rated = movie_features.sort_values(
+        ["total_ratings", "avg_rating"],
+        ascending=[False, False],
+    ).iloc[0]
+
+    return {
+        "total_movies": int(len(movie_features)),
+        "total_genres": int(movie_features["genres"].nunique()),
+        "total_ratings": int(movie_features["total_ratings"].sum()),
+        "avg_rating": round(float(movie_features["avg_rating"].mean()), 2),
+        "min_avg_rating": round(float(movie_features["avg_rating"].min()), 2),
+        "max_avg_rating": round(float(movie_features["avg_rating"].max()), 2),
+        "most_rated_movie_id": int(most_rated["movieId"]),
+        "most_rated_title": most_rated["title"],
     }
 
 

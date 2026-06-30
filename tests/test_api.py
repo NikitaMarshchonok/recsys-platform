@@ -136,6 +136,58 @@ def test_metrics(monkeypatch):
     }
 
 
+def test_catalog_summary(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Drama", "Action", "Drama"],
+        "avg_rating": [4.5, 4.8, 3.9],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/catalog/summary")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_movies": 3,
+        "total_genres": 2,
+        "total_ratings": 300,
+        "avg_rating": 4.4,
+        "min_avg_rating": 3.9,
+        "max_avg_rating": 4.8,
+        "most_rated_movie_id": 3,
+        "most_rated_title": "Movie 3",
+    }
+
+
+def test_catalog_summary_empty_catalog(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [],
+        "title": [],
+        "genres": [],
+        "avg_rating": [],
+        "total_ratings": [],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/catalog/summary")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_movies": 0,
+        "total_genres": 0,
+        "total_ratings": 0,
+        "avg_rating": 0.0,
+        "min_avg_rating": 0.0,
+        "max_avg_rating": 0.0,
+        "most_rated_movie_id": None,
+        "most_rated_title": None,
+    }
+
+
 def test_recommend_valid_user():
     response = client.post(
         "/recommend",
