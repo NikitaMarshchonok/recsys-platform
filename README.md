@@ -135,7 +135,8 @@ Request personalized recommendations:
 ```json
 {
   "user_id": 1,
-  "n_recommendations": 5
+  "n_recommendations": 5,
+  "fallback_to_top": false
 }
 ```
 
@@ -160,7 +161,15 @@ Example recommendation request:
 ```bash
 curl -X POST "http://localhost:8001/recommend" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": 1, "n_recommendations": 5}'
+  -d '{"user_id": 1, "n_recommendations": 5, "fallback_to_top": false}'
+```
+
+Cold-start fallback for an unknown user:
+
+```bash
+curl -X POST "http://localhost:8001/recommend" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": 9999, "n_recommendations": 5, "fallback_to_top": true}'
 ```
 
 Readiness check:
@@ -171,7 +180,7 @@ curl "http://localhost:8001/ready"
 
 ## API Error Responses
 
-Unknown users return `404`:
+Unknown users return `404` when `fallback_to_top` is disabled:
 
 ```json
 {
@@ -246,7 +255,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 20 passing tests for root, health, version, readiness, metrics, tracing, stats, recommendations, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- API tests: 21 passing tests for root, health, version, readiness, metrics, tracing, stats, recommendations, cold-start fallback, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
 
 ## Project Status
 

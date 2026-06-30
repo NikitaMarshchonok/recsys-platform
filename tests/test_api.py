@@ -68,6 +68,7 @@ def mock_api_resources(monkeypatch):
         "load_recommendation_resources",
         lambda: (FakeSpark(), FakeModel(), movies, {1}),
     )
+    monkeypatch.setattr(api_module, "load_valid_user_ids", lambda: {1})
 
 
 def test_stats_response(monkeypatch):
@@ -153,7 +154,34 @@ def test_recommend_openapi_example_uses_valid_user():
     schema = app.openapi()
     example = schema["components"]["schemas"]["RecommendRequest"]["examples"][0]
 
-    assert example == {"user_id": 1, "n_recommendations": 5}
+    assert example == {
+        "user_id": 1,
+        "n_recommendations": 5,
+        "fallback_to_top": False,
+    }
+
+
+def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Drama", "Action", "Comedy"],
+        "avg_rating": [4.5, 4.8, 4.8],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.post(
+        "/recommend",
+        json={"user_id": 9999, "n_recommendations": 2, "fallback_to_top": True},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"movie_id": 3, "title": "Movie 3", "genres": "Comedy", "predicted_rating": 4.8},
+        {"movie_id": 2, "title": "Movie 2", "genres": "Action", "predicted_rating": 4.8},
+    ]
 
 
 def test_similar_movies_response(monkeypatch):

@@ -93,7 +93,7 @@ def init_db():
 
 
 def load_recommendation_resources():
-    global spark, model, movies, valid_user_ids
+    global spark, model
 
     if spark is None or model is None:
         from pyspark.sql import SparkSession
@@ -106,14 +106,40 @@ def load_recommendation_resources():
         spark.sparkContext.setLogLevel("ERROR")
         model = ALSModel.load(str(settings.model_path))
 
+    return spark, model, load_movie_catalog(), load_valid_user_ids()
+
+
+def load_movie_catalog():
+    global movies
+
     if movies is None:
         movies = pd.read_csv(settings.movies_path)
+
+    return movies
+
+
+def load_valid_user_ids():
+    global valid_user_ids
 
     if valid_user_ids is None:
         users = pd.read_csv(settings.users_path)
         valid_user_ids = set(users["userId"].astype(int))
 
-    return spark, model, movies, valid_user_ids
+    return valid_user_ids
+
+
+def select_top_movies(n: int, genre: str | None = None):
+    movie_features = pd.read_csv(settings.movie_features_path)
+
+    if genre is not None:
+        movie_features = movie_features[
+            movie_features["genres"].str.lower() == genre.lower()
+        ]
+
+    return movie_features.sort_values(
+        ["avg_rating", "total_ratings"],
+        ascending=[False, False],
+    ).head(n)
 
 # Схема запроса — что принимаем
 class RecommendRequest(BaseModel):
@@ -124,6 +150,10 @@ class RecommendRequest(BaseModel):
         le=50,
         description="Количество рекомендаций от 1 до 50",
     )
+    fallback_to_top: bool = Field(
+        default=False,
+        description="Вернуть top-rated fallback для неизвестного пользователя",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -131,6 +161,7 @@ class RecommendRequest(BaseModel):
                 {
                     "user_id": 1,
                     "n_recommendations": 5,
+                    "fallback_to_top": False,
                 }
             ]
         }
@@ -260,43 +291,57 @@ def recommend(request: RecommendRequest):
     start_time = time.time()  # начинаем замер времени
 
     init_db()
-    spark_session, als_model, movie_catalog, users = load_recommendation_resources()
+    users = load_valid_user_ids()
 
     if request.user_id not in users:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Пользователь {request.user_id} не найден"
+        if not request.fallback_to_top:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Пользователь {request.user_id} не найден"
+            )
+
+        top = select_top_movies(request.n_recommendations)
+        result = [
+            MovieRecommendation(
+                movie_id=int(row["movieId"]),
+                title=row["title"],
+                genres=row["genres"],
+                predicted_rating=round(float(row["avg_rating"]), 2),
+            )
+            for _, row in top.iterrows()
+        ]
+    else:
+        spark_session, als_model, movie_catalog, _ = load_recommendation_resources()
+
+        user_df = spark_session.createDataFrame(
+            [(request.user_id,)],
+            ["userId"]
         )
 
-    user_df = spark_session.createDataFrame(
-        [(request.user_id,)],
-        ["userId"]
-    )
-
-    recs = als_model.recommendForUserSubset(
-        user_df,
-        request.n_recommendations
-    )
-
-    rows = recs.collect()
-    if not rows:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Для пользователя {request.user_id} нет рекомендаций"
+        recs = als_model.recommendForUserSubset(
+            user_df,
+            request.n_recommendations
         )
 
-    recs_list = rows[0]["recommendations"]
+        rows = recs.collect()
+        if not rows:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Для пользователя {request.user_id} нет рекомендаций"
+            )
 
-    result = []
-    for rec in recs_list:
-        movie_id = rec["movieId"]
-        movie_info = movie_catalog[movie_catalog["movieId"] == movie_id].iloc[0]
-        result.append(MovieRecommendation(
-            movie_id=movie_id,
-            title=movie_info["title"],
-            genres=movie_info["genres"],
-            predicted_rating=round(float(rec["rating"]), 2),
-        ))
+        recs_list = rows[0]["recommendations"]
+
+        result = []
+        for rec in recs_list:
+            movie_id = rec["movieId"]
+            movie_info = movie_catalog[movie_catalog["movieId"] == movie_id].iloc[0]
+            result.append(MovieRecommendation(
+                movie_id=movie_id,
+                title=movie_info["title"],
+                genres=movie_info["genres"],
+                predicted_rating=round(float(rec["rating"]), 2),
+            ))
 
     # Считаем время и пишем в базу
     response_time = (time.time() - start_time) * 1000  # в миллисекундах
@@ -355,17 +400,7 @@ def top_movies(
     n: int = Query(default=10, ge=1, le=50),
     genre: str | None = Query(default=None, min_length=1),
 ):
-    movie_features = pd.read_csv(settings.movie_features_path)
-
-    if genre is not None:
-        movie_features = movie_features[
-            movie_features["genres"].str.lower() == genre.lower()
-        ]
-
-    top = movie_features.sort_values(
-        ["avg_rating", "total_ratings"],
-        ascending=[False, False],
-    ).head(n)
+    top = select_top_movies(n, genre)
 
     return [
         {
