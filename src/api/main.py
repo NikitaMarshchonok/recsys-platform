@@ -213,6 +213,14 @@ class UserProfileResponse(BaseModel):
     max_rating: float
 
 
+class UserRatingHistoryResponse(BaseModel):
+    movie_id: int
+    title: str
+    genres: str
+    rating: float
+    timestamp: int
+
+
 class RootResponse(BaseModel):
     status: str
     message: str
@@ -279,6 +287,7 @@ def readiness():
     checks = {
         "model": settings.model_path.exists(),
         "movies": settings.movies_path.exists(),
+        "ratings": settings.ratings_path.exists(),
         "users": settings.users_path.exists(),
         "user_features": settings.user_features_path.exists(),
         "movie_features": settings.movie_features_path.exists(),
@@ -525,6 +534,33 @@ def user_profile(user_id: int):
         "min_rating": float(row["min_rating"]),
         "max_rating": float(row["max_rating"]),
     }
+
+
+@app.get("/users/{user_id}/history", response_model=list[UserRatingHistoryResponse])
+def user_rating_history(user_id: int, n: int = Query(default=10, ge=1, le=50)):
+    ratings = pd.read_csv(settings.ratings_path)
+
+    user_ratings = ratings[ratings["userId"] == user_id]
+    if user_ratings.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"У пользователя {user_id} нет истории оценок",
+        )
+
+    user_ratings = user_ratings.sort_values("timestamp", ascending=False).head(n)
+    movie_catalog = load_movie_catalog()
+    history = user_ratings.merge(movie_catalog, on="movieId", how="left")
+
+    return [
+        {
+            "movie_id": int(row["movieId"]),
+            "title": row["title"] if pd.notna(row["title"]) else f"Movie {int(row['movieId'])}",
+            "genres": row["genres"] if pd.notna(row["genres"]) else "Unknown",
+            "rating": round(float(row["rating"]), 2),
+            "timestamp": int(row["timestamp"]),
+        }
+        for _, row in history.iterrows()
+    ]
 
 
 @app.get("/stats", response_model=StatsResponse)

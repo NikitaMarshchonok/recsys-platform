@@ -154,6 +154,7 @@ Request personalized recommendations:
 | GET | `/movies/top` | Top-rated movies fallback ranking, optionally filtered by genre |
 | GET | `/movies/{movie_id}` | Movie catalog detail for recommendation debugging |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
+| GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
 | POST | `/recommend` | Personalized movie recommendations |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
 | GET | `/stats` | Request statistics from PostgreSQL |
@@ -192,6 +193,12 @@ Movie detail:
 curl "http://localhost:8001/movies/1"
 ```
 
+User rating history:
+
+```bash
+curl "http://localhost:8001/users/1/history?n=5"
+```
+
 ## API Error Responses
 
 Unknown users return `404` when `fallback_to_top` is disabled:
@@ -224,6 +231,7 @@ The API can be configured through environment variables:
 | --- | --- |
 | `RECSYS_MODEL_PATH` | `models/als_model` |
 | `RECSYS_MOVIES_PATH` | `data/raw/movies.csv` |
+| `RECSYS_RATINGS_PATH` | `data/raw/ratings.csv` |
 | `RECSYS_USERS_PATH` | `data/raw/users.csv` |
 | `RECSYS_USER_FEATURES_PATH` | `data/processed/user_features.csv` |
 | `RECSYS_MOVIE_FEATURES_PATH` | `data/processed/movie_features.csv` |
@@ -269,7 +277,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 25 passing tests for root, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- API tests: 27 passing tests for root, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, user rating history, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
 
 ## Project Status
 

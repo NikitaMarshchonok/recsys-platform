@@ -8,6 +8,7 @@ class Settings:
     base_dir: Path
     model_path: Path
     movies_path: Path
+    ratings_path: Path
     users_path: Path
     user_features_path: Path
     movie_features_path: Path
@@ -25,6 +26,7 @@ def get_settings() -> Settings:
         base_dir=base_dir,
         model_path=Path(os.getenv("RECSYS_MODEL_PATH", base_dir / "models" / "als_model")),
         movies_path=Path(os.getenv("RECSYS_MOVIES_PATH", base_dir / "data" / "raw" / "movies.csv")),
+        ratings_path=Path(os.getenv("RECSYS_RATINGS_PATH", base_dir / "data" / "raw" / "ratings.csv")),
         users_path=Path(os.getenv("RECSYS_USERS_PATH", base_dir / "data" / "raw" / "users.csv")),
         user_features_path=Path(
             os.getenv("RECSYS_USER_FEATURES_PATH", base_dir / "data" / "processed" / "user_features.csv")

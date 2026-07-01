@@ -418,6 +418,66 @@ def test_user_profile_not_found(monkeypatch):
     assert response.status_code == 404
 
 
+def test_user_rating_history_response(monkeypatch):
+    ratings = pd.DataFrame({
+        "userId": [1, 2, 1],
+        "movieId": [1, 3, 2],
+        "rating": [4.25, 3.0, 5.0],
+        "timestamp": [100, 200, 300],
+    })
+    movies = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Drama", "Action", "Comedy"],
+    })
+
+    def fake_read_csv(path):
+        if path == api_module.settings.ratings_path:
+            return ratings
+        if path == api_module.settings.movies_path:
+            return movies
+        raise AssertionError(f"Unexpected path: {path}")
+
+    monkeypatch.setattr(api_module, "movies", None)
+    monkeypatch.setattr(api_module.pd, "read_csv", fake_read_csv)
+
+    response = client.get("/users/1/history?n=2")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "movie_id": 2,
+            "title": "Movie 2",
+            "genres": "Action",
+            "rating": 5.0,
+            "timestamp": 300,
+        },
+        {
+            "movie_id": 1,
+            "title": "Movie 1",
+            "genres": "Drama",
+            "rating": 4.25,
+            "timestamp": 100,
+        },
+    ]
+
+
+def test_user_rating_history_not_found(monkeypatch):
+    ratings = pd.DataFrame({
+        "userId": [1],
+        "movieId": [1],
+        "rating": [4.25],
+        "timestamp": [100],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: ratings)
+
+    response = client.get("/users/999/history")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "У пользователя 999 нет истории оценок"}
+
+
 def test_openapi_has_root_and_health_response_schemas():
     schema = app.openapi()
 
