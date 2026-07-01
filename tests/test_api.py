@@ -336,6 +336,46 @@ def test_movie_genres_response(monkeypatch):
     ]
 
 
+def test_movie_detail_response(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2],
+        "title": ["Movie 1", "Movie 2"],
+        "genres": ["Drama", "Action"],
+        "avg_rating": [4.234, 4.8],
+        "total_ratings": [100, 80],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/1")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "movie_id": 1,
+        "title": "Movie 1",
+        "genres": "Drama",
+        "avg_rating": 4.23,
+        "total_ratings": 100,
+    }
+
+
+def test_movie_detail_not_found(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1],
+        "title": ["Movie 1"],
+        "genres": ["Drama"],
+        "avg_rating": [4.2],
+        "total_ratings": [100],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Фильм 999 не найден"}
+
+
 def test_user_profile_response(monkeypatch):
     user_features = pd.DataFrame({
         "userId": [1, 2],

@@ -190,6 +190,14 @@ class TopMovieResponse(BaseModel):
     total_ratings: int
 
 
+class MovieDetailResponse(BaseModel):
+    movie_id: int
+    title: str
+    genres: str
+    avg_rating: float
+    total_ratings: int
+
+
 class GenreSummaryResponse(BaseModel):
     genre: str
     movie_count: int
@@ -480,6 +488,24 @@ def movie_genres():
         }
         for _, row in genre_stats.iterrows()
     ]
+
+
+@app.get("/movies/{movie_id}", response_model=MovieDetailResponse)
+def movie_detail(movie_id: int):
+    movie_features = pd.read_csv(settings.movie_features_path)
+
+    target = movie_features[movie_features["movieId"] == movie_id]
+    if target.empty:
+        raise HTTPException(status_code=404, detail=f"Фильм {movie_id} не найден")
+
+    row = target.iloc[0]
+    return {
+        "movie_id": int(row["movieId"]),
+        "title": row["title"],
+        "genres": row["genres"],
+        "avg_rating": round(float(row["avg_rating"]), 2),
+        "total_ratings": int(row["total_ratings"]),
+    }
 
 
 @app.get("/users/{user_id}/profile", response_model=UserProfileResponse)
