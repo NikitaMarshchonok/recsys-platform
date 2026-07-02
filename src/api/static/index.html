@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecSys Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8f7;
+      --panel: #ffffff;
+      --text: #171717;
+      --muted: #5f6b66;
+      --line: #dfe7e4;
+      --accent: #0f766e;
+      --accent-strong: #0b5f59;
+      --error: #b42318;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .docs-link {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 150px 120px 92px;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    button {
+      min-height: 40px;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--text);
+      padding: 0 10px;
+    }
+
+    button {
+      border: 0;
+      background: var(--accent);
+      color: white;
+      padding: 0 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--accent-strong);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .status {
+      min-height: 20px;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status.error {
+      color: var(--error);
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+    }
+
+    .movie {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 118px;
+      background: #fbfdfc;
+    }
+
+    .movie h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      line-height: 1.25;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #ffffff;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfdfc;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .side-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-item {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    .side-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .side-title {
+      margin: 0 0 4px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .side-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        width: min(100% - 20px, 1180px);
+        padding-top: 14px;
+      }
+
+      .topbar,
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .controls,
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="topbar">
+      <div>
+        <h1>RecSys Demo</h1>
+        <p class="subtitle">Movie catalog search and recommendation platform preview.</p>
+      </div>
+      <a class="docs-link" href="/docs">API docs</a>
+    </header>
+
+    <div class="layout">
+      <section aria-labelledby="search-title">
+        <div class="section-head">
+          <h2 id="search-title">Movie Search</h2>
+        </div>
+
+        <form id="search-form" class="controls">
+          <label>
+            Title
+            <input id="query" name="q" value="Movie" autocomplete="off">
+          </label>
+          <label>
+            Genre
+            <select id="genre" name="genre">
+              <option value="">Any</option>
+            </select>
+          </label>
+          <label>
+            Min rating
+            <input id="min-rating" name="min_rating" type="number" min="0" max="5" step="0.1" value="3.0">
+          </label>
+          <label>
+            Limit
+            <input id="limit" name="n" type="number" min="1" max="50" value="8">
+          </label>
+          <button id="search-button" type="submit">Search</button>
+        </form>
+
+        <p id="search-status" class="status">Loading catalog...</p>
+        <div id="results" class="grid"></div>
+      </section>
+
+      <aside>
+        <section aria-labelledby="summary-title">
+          <div class="section-head">
+            <h2 id="summary-title">Catalog Summary</h2>
+          </div>
+          <div id="summary" class="summary"></div>
+        </section>
+
+        <section aria-labelledby="top-title" style="margin-top: 16px;">
+          <div class="section-head">
+            <h2 id="top-title">Top Movies</h2>
+          </div>
+          <div id="top-movies" class="side-list"></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const form = document.querySelector("#search-form");
+    const queryInput = document.querySelector("#query");
+    const genreSelect = document.querySelector("#genre");
+    const minRatingInput = document.querySelector("#min-rating");
+    const limitInput = document.querySelector("#limit");
+    const searchButton = document.querySelector("#search-button");
+    const statusEl = document.querySelector("#search-status");
+    const resultsEl = document.querySelector("#results");
+    const summaryEl = document.querySelector("#summary");
+    const topMoviesEl = document.querySelector("#top-movies");
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    async function getJson(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function movieCard(movie) {
+      return `
+        <article class="movie">
+          <h3>${movie.title}</h3>
+          <div class="meta">
+            <span class="pill">${movie.genres}</span>
+            <span class="pill">rating ${movie.avg_rating}</span>
+            <span class="pill">${movie.total_ratings} ratings</span>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderMovies(movies) {
+      if (movies.length === 0) {
+        resultsEl.innerHTML = "";
+        setStatus("No movies match these filters.");
+        return;
+      }
+
+      resultsEl.innerHTML = movies.map(movieCard).join("");
+      setStatus(`${movies.length} movies found.`);
+    }
+
+    async function searchMovies() {
+      const params = new URLSearchParams();
+      params.set("q", queryInput.value.trim() || "Movie");
+      params.set("n", limitInput.value || "8");
+
+      if (genreSelect.value) {
+        params.set("genre", genreSelect.value);
+      }
+
+      if (minRatingInput.value !== "") {
+        params.set("min_rating", minRatingInput.value);
+      }
+
+      searchButton.disabled = true;
+      setStatus("Searching...");
+
+      try {
+        const movies = await getJson(`/movies/search?${params.toString()}`);
+        renderMovies(movies);
+      } catch (error) {
+        resultsEl.innerHTML = "";
+        setStatus(error.message, true);
+      } finally {
+        searchButton.disabled = false;
+      }
+    }
+
+    function renderSummary(summary) {
+      summaryEl.innerHTML = `
+        <div class="metric"><span>Movies</span><strong>${summary.total_movies}</strong></div>
+        <div class="metric"><span>Genres</span><strong>${summary.total_genres}</strong></div>
+        <div class="metric"><span>Avg rating</span><strong>${summary.avg_rating}</strong></div>
+        <div class="metric"><span>Total ratings</span><strong>${summary.total_ratings}</strong></div>
+      `;
+    }
+
+    function renderTopMovies(movies) {
+      topMoviesEl.innerHTML = movies.map((movie) => `
+        <div class="side-item">
+          <p class="side-title">${movie.title}</p>
+          <p class="side-meta">${movie.genres} - rating ${movie.avg_rating} - ${movie.total_ratings} ratings</p>
+        </div>
+      `).join("");
+    }
+
+    async function loadGenres() {
+      const genres = await getJson("/movies/genres");
+      genreSelect.innerHTML += genres
+        .map((genre) => `<option value="${genre.genre}">${genre.genre}</option>`)
+        .join("");
+    }
+
+    async function boot() {
+      try {
+        const [summary, topMovies] = await Promise.all([
+          getJson("/catalog/summary"),
+          getJson("/movies/top?n=5"),
+          loadGenres(),
+        ]);
+        renderSummary(summary);
+        renderTopMovies(topMovies);
+        await searchMovies();
+      } catch (error) {
+        setStatus(error.message, true);
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      searchMovies();
+    });
+
+    boot();
+  </script>
+</body>
+</html>

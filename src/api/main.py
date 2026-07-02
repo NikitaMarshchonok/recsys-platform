@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import logging
 import pandas as pd
@@ -22,6 +23,8 @@ app = FastAPI(
     description="Рекомендательная система фильмов",
     version="1.0.0",
 )
+
+web_app_path = settings.base_dir / "src" / "api" / "static" / "index.html"
 
 
 @app.middleware("http")
@@ -270,6 +273,12 @@ class CatalogSummaryResponse(BaseModel):
 @app.get("/", response_model=RootResponse)
 def root():
     return {"status": "ok", "message": "RecSys API работает"}
+
+
+@app.get("/app", response_class=FileResponse, include_in_schema=False)
+def web_app():
+    return FileResponse(web_app_path)
+
 
 # Эндпоинт здоровья — для мониторинга
 @app.get("/health", response_model=HealthResponse)

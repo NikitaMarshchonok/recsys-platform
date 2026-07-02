@@ -130,6 +130,12 @@ Check that model and data artifacts are available:
 GET /ready
 ```
 
+Open the demo web UI:
+
+```text
+http://localhost:8001/app
+```
+
 Request personalized recommendations:
 
 ```json
@@ -145,6 +151,7 @@ Request personalized recommendations:
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | GET | `/` | Root status message |
+| GET | `/app` | Browser demo UI for catalog exploration |
 | GET | `/health` | Lightweight health check |
 | GET | `/version` | Service name and API version |
 | GET | `/ready` | Readiness check for model and data artifacts |
@@ -182,6 +189,12 @@ Readiness check:
 curl "http://localhost:8001/ready"
 ```
 
+Demo web UI:
+
+```text
+http://localhost:8001/app
+```
+
 Catalog summary:
 
 ```bash
@@ -197,7 +210,7 @@ curl "http://localhost:8001/movies/1"
 Movie search:
 
 ```bash
-curl "http://localhost:8001/movies/search?q=Movie&genre=Drama&min_rating=4.0"
+curl "http://localhost:8001/movies/search?q=Movie&genre=Drama&min_rating=3.0"
 ```
 
 User rating history:
@@ -284,7 +297,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 29 passing tests for root, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie search, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, user rating history, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- API tests: 30 passing tests for root, web UI, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie search, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, user rating history, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
 
 ## Project Status
 
@@ -295,6 +308,7 @@ Implemented:
 - ALS model training
 - MLflow experiment tracking
 - FastAPI recommendation serving
+- Browser demo UI
 - Request tracing and latency headers
 - Health and readiness checks
 - PostgreSQL request logging

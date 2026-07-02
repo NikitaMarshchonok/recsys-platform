@@ -98,6 +98,14 @@ def test_root_response():
     assert response.json() == {"status": "ok", "message": "RecSys API работает"}
 
 
+def test_web_app_response():
+    response = client.get("/app")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "RecSys Demo" in response.text
+
+
 def test_version():
     response = client.get("/version")
 
