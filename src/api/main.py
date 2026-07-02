@@ -499,6 +499,42 @@ def movie_genres():
     ]
 
 
+@app.get("/movies/search", response_model=list[MovieDetailResponse])
+def search_movies(
+    q: str = Query(..., min_length=1, max_length=100),
+    n: int = Query(default=10, ge=1, le=50),
+    genre: str | None = Query(default=None, min_length=1),
+    min_rating: float | None = Query(default=None, ge=0, le=5),
+):
+    movie_features = pd.read_csv(settings.movie_features_path)
+
+    matches = movie_features[
+        movie_features["title"].str.contains(q, case=False, na=False)
+    ]
+
+    if genre is not None:
+        matches = matches[matches["genres"].str.lower() == genre.lower()]
+
+    if min_rating is not None:
+        matches = matches[matches["avg_rating"] >= min_rating]
+
+    matches = matches.sort_values(
+        ["avg_rating", "total_ratings", "title"],
+        ascending=[False, False, True],
+    ).head(n)
+
+    return [
+        {
+            "movie_id": int(row["movieId"]),
+            "title": row["title"],
+            "genres": row["genres"],
+            "avg_rating": round(float(row["avg_rating"]), 2),
+            "total_ratings": int(row["total_ratings"]),
+        }
+        for _, row in matches.iterrows()
+    ]
+
+
 @app.get("/movies/{movie_id}", response_model=MovieDetailResponse)
 def movie_detail(movie_id: int):
     movie_features = pd.read_csv(settings.movie_features_path)

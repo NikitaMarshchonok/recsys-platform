@@ -152,6 +152,7 @@ Request personalized recommendations:
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Top-rated movies fallback ranking, optionally filtered by genre |
+| GET | `/movies/search` | Search movies by title with optional genre and rating filters |
 | GET | `/movies/{movie_id}` | Movie catalog detail for recommendation debugging |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
@@ -191,6 +192,12 @@ Movie detail:
 
 ```bash
 curl "http://localhost:8001/movies/1"
+```
+
+Movie search:
+
+```bash
+curl "http://localhost:8001/movies/search?q=Movie&genre=Drama&min_rating=4.0"
 ```
 
 User rating history:
@@ -277,7 +284,7 @@ password: admin
 - Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
 - Latest local ALS RMSE: 1.4285
 - ALS model saved to `models/als_model`
-- API tests: 27 passing tests for root, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, user rating history, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- API tests: 29 passing tests for root, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie search, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, user rating history, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
 
 ## Project Status
 

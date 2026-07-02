@@ -376,6 +376,63 @@ def test_movie_detail_not_found(monkeypatch):
     assert response.json() == {"detail": "Фильм 999 не найден"}
 
 
+def test_movie_search_response(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Star Drama", "Star Action", "Other Movie"],
+        "genres": ["Drama", "Action", "Drama"],
+        "avg_rating": [4.4, 4.8, 5.0],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/search?q=star&n=2")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "movie_id": 2,
+            "title": "Star Action",
+            "genres": "Action",
+            "avg_rating": 4.8,
+            "total_ratings": 80,
+        },
+        {
+            "movie_id": 1,
+            "title": "Star Drama",
+            "genres": "Drama",
+            "avg_rating": 4.4,
+            "total_ratings": 100,
+        },
+    ]
+
+
+def test_movie_search_filters_by_genre_and_rating(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie Alpha", "Movie Beta", "Movie Gamma"],
+        "genres": ["Drama", "Action", "Drama"],
+        "avg_rating": [4.4, 4.9, 4.8],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/search?q=movie&genre=drama&min_rating=4.5")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "movie_id": 3,
+            "title": "Movie Gamma",
+            "genres": "Drama",
+            "avg_rating": 4.8,
+            "total_ratings": 120,
+        },
+    ]
+
+
 def test_user_profile_response(monkeypatch):
     user_features = pd.DataFrame({
         "userId": [1, 2],
