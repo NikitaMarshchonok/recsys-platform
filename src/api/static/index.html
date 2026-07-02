@@ -69,6 +69,11 @@
       align-items: start;
     }
 
+    .main-column {
+      display: grid;
+      gap: 16px;
+    }
+
     section {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -98,12 +103,30 @@
       margin-bottom: 14px;
     }
 
+    .recommendation-controls {
+      grid-template-columns: 140px 120px minmax(180px, 1fr) 150px;
+    }
+
     label {
       display: grid;
       gap: 5px;
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
+    }
+
+    .checkbox-label {
+      align-items: center;
+      grid-template-columns: auto 1fr;
+      min-height: 40px;
+      padding-top: 18px;
+    }
+
+    .checkbox-label input {
+      width: 18px;
+      height: 18px;
+      min-height: 18px;
+      padding: 0;
     }
 
     input,
@@ -265,12 +288,21 @@
       .controls {
         grid-template-columns: 1fr 1fr;
       }
+
+      .recommendation-controls {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     @media (max-width: 520px) {
       .controls,
+      .recommendation-controls,
       .summary {
         grid-template-columns: 1fr;
+      }
+
+      .checkbox-label {
+        padding-top: 0;
       }
     }
   </style>
@@ -286,36 +318,63 @@
     </header>
 
     <div class="layout">
-      <section aria-labelledby="search-title">
-        <div class="section-head">
-          <h2 id="search-title">Movie Search</h2>
-        </div>
+      <div class="main-column">
+        <section aria-labelledby="search-title">
+          <div class="section-head">
+            <h2 id="search-title">Movie Search</h2>
+          </div>
 
-        <form id="search-form" class="controls">
-          <label>
-            Title
-            <input id="query" name="q" value="Movie" autocomplete="off">
-          </label>
-          <label>
-            Genre
-            <select id="genre" name="genre">
-              <option value="">Any</option>
-            </select>
-          </label>
-          <label>
-            Min rating
-            <input id="min-rating" name="min_rating" type="number" min="0" max="5" step="0.1" value="3.0">
-          </label>
-          <label>
-            Limit
-            <input id="limit" name="n" type="number" min="1" max="50" value="8">
-          </label>
-          <button id="search-button" type="submit">Search</button>
-        </form>
+          <form id="search-form" class="controls">
+            <label>
+              Title
+              <input id="query" name="q" value="Movie" autocomplete="off">
+            </label>
+            <label>
+              Genre
+              <select id="genre" name="genre">
+                <option value="">Any</option>
+              </select>
+            </label>
+            <label>
+              Min rating
+              <input id="min-rating" name="min_rating" type="number" min="0" max="5" step="0.1" value="3.0">
+            </label>
+            <label>
+              Limit
+              <input id="limit" name="n" type="number" min="1" max="50" value="8">
+            </label>
+            <button id="search-button" type="submit">Search</button>
+          </form>
 
-        <p id="search-status" class="status">Loading catalog...</p>
-        <div id="results" class="grid"></div>
-      </section>
+          <p id="search-status" class="status">Loading catalog...</p>
+          <div id="results" class="grid"></div>
+        </section>
+
+        <section aria-labelledby="recommendations-title">
+          <div class="section-head">
+            <h2 id="recommendations-title">Recommendations</h2>
+          </div>
+
+          <form id="recommendation-form" class="controls recommendation-controls">
+            <label>
+              User ID
+              <input id="recommend-user-id" name="user_id" type="number" min="1" value="1">
+            </label>
+            <label>
+              Limit
+              <input id="recommend-limit" name="n_recommendations" type="number" min="1" max="50" value="5">
+            </label>
+            <label class="checkbox-label">
+              <input id="recommend-fallback" name="fallback_to_top" type="checkbox">
+              Use top movies fallback
+            </label>
+            <button id="recommend-button" type="submit">Recommend</button>
+          </form>
+
+          <p id="recommendation-status" class="status">Enter a user and request recommendations.</p>
+          <div id="recommendations" class="grid"></div>
+        </section>
+      </div>
 
       <aside>
         <section aria-labelledby="summary-title">
@@ -346,16 +405,41 @@
     const resultsEl = document.querySelector("#results");
     const summaryEl = document.querySelector("#summary");
     const topMoviesEl = document.querySelector("#top-movies");
+    const recommendationForm = document.querySelector("#recommendation-form");
+    const recommendationUserIdInput = document.querySelector("#recommend-user-id");
+    const recommendationLimitInput = document.querySelector("#recommend-limit");
+    const recommendationFallbackInput = document.querySelector("#recommend-fallback");
+    const recommendationButton = document.querySelector("#recommend-button");
+    const recommendationStatusEl = document.querySelector("#recommendation-status");
+    const recommendationsEl = document.querySelector("#recommendations");
 
     function setStatus(message, isError = false) {
       statusEl.textContent = message;
       statusEl.classList.toggle("error", isError);
     }
 
+    function setRecommendationStatus(message, isError = false) {
+      recommendationStatusEl.textContent = message;
+      recommendationStatusEl.classList.toggle("error", isError);
+    }
+
     async function getJson(url) {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    async function postJson(url, payload) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Request failed: ${response.status}`);
       }
       return response.json();
     }
@@ -384,6 +468,30 @@
       setStatus(`${movies.length} movies found.`);
     }
 
+    function recommendationCard(movie) {
+      return `
+        <article class="movie">
+          <h3>${movie.title}</h3>
+          <div class="meta">
+            <span class="pill">${movie.genres}</span>
+            <span class="pill">predicted ${movie.predicted_rating}</span>
+            <span class="pill">#${movie.movie_id}</span>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderRecommendations(movies) {
+      if (movies.length === 0) {
+        recommendationsEl.innerHTML = "";
+        setRecommendationStatus("No recommendations returned.");
+        return;
+      }
+
+      recommendationsEl.innerHTML = movies.map(recommendationCard).join("");
+      setRecommendationStatus(`${movies.length} recommendations returned.`);
+    }
+
     async function searchMovies() {
       const params = new URLSearchParams();
       params.set("q", queryInput.value.trim() || "Movie");
@@ -408,6 +516,25 @@
         setStatus(error.message, true);
       } finally {
         searchButton.disabled = false;
+      }
+    }
+
+    async function loadRecommendations() {
+      recommendationButton.disabled = true;
+      recommendationsEl.innerHTML = "";
+      setRecommendationStatus("Loading recommendations...");
+
+      try {
+        const movies = await postJson("/recommend", {
+          user_id: Number(recommendationUserIdInput.value || 1),
+          n_recommendations: Number(recommendationLimitInput.value || 5),
+          fallback_to_top: recommendationFallbackInput.checked,
+        });
+        renderRecommendations(movies);
+      } catch (error) {
+        setRecommendationStatus(error.message, true);
+      } finally {
+        recommendationButton.disabled = false;
       }
     }
 
@@ -454,6 +581,11 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       searchMovies();
+    });
+
+    recommendationForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadRecommendations();
     });
 
     boot();
