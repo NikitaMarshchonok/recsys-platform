@@ -111,6 +111,10 @@
       grid-template-columns: minmax(120px, 1fr) 130px;
     }
 
+    .similar-controls {
+      grid-template-columns: 140px 120px 150px;
+    }
+
     label {
       display: grid;
       gap: 5px;
@@ -300,12 +304,17 @@
       .user-controls {
         grid-template-columns: 1fr 1fr;
       }
+
+      .similar-controls {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     @media (max-width: 520px) {
       .controls,
       .recommendation-controls,
       .user-controls,
+      .similar-controls,
       .summary {
         grid-template-columns: 1fr;
       }
@@ -383,6 +392,27 @@
           <p id="recommendation-status" class="status">Enter a user and request recommendations.</p>
           <div id="recommendations" class="grid"></div>
         </section>
+
+        <section aria-labelledby="similar-title">
+          <div class="section-head">
+            <h2 id="similar-title">Similar Movies</h2>
+          </div>
+
+          <form id="similar-form" class="controls similar-controls">
+            <label>
+              Movie ID
+              <input id="similar-movie-id" name="movie_id" type="number" min="1" value="1">
+            </label>
+            <label>
+              Limit
+              <input id="similar-limit" name="n" type="number" min="1" max="50" value="5">
+            </label>
+            <button id="similar-button" type="submit">Find Similar</button>
+          </form>
+
+          <p id="similar-status" class="status">Enter a movie ID to explore item-to-item similarity.</p>
+          <div id="similar-movies" class="grid"></div>
+        </section>
       </div>
 
       <aside>
@@ -391,6 +421,21 @@
             <h2 id="summary-title">Catalog Summary</h2>
           </div>
           <div id="summary" class="summary"></div>
+        </section>
+
+        <section aria-labelledby="movie-detail-title" style="margin-top: 16px;">
+          <div class="section-head">
+            <h2 id="movie-detail-title">Movie Detail</h2>
+          </div>
+          <form id="movie-detail-form" class="controls user-controls">
+            <label>
+              Movie ID
+              <input id="detail-movie-id" name="movie_id" type="number" min="1" value="1">
+            </label>
+            <button id="detail-button" type="submit">Load</button>
+          </form>
+          <p id="movie-detail-status" class="status">Load catalog metadata for a movie.</p>
+          <div id="movie-detail" class="side-list"></div>
         </section>
 
         <section aria-labelledby="user-context-title" style="margin-top: 16px;">
@@ -430,6 +475,11 @@
     const resultsEl = document.querySelector("#results");
     const summaryEl = document.querySelector("#summary");
     const topMoviesEl = document.querySelector("#top-movies");
+    const movieDetailForm = document.querySelector("#movie-detail-form");
+    const detailMovieIdInput = document.querySelector("#detail-movie-id");
+    const detailButton = document.querySelector("#detail-button");
+    const movieDetailStatusEl = document.querySelector("#movie-detail-status");
+    const movieDetailEl = document.querySelector("#movie-detail");
     const recommendationForm = document.querySelector("#recommendation-form");
     const recommendationUserIdInput = document.querySelector("#recommend-user-id");
     const recommendationLimitInput = document.querySelector("#recommend-limit");
@@ -443,6 +493,12 @@
     const contextStatusEl = document.querySelector("#context-status");
     const userProfileEl = document.querySelector("#user-profile");
     const userHistoryEl = document.querySelector("#user-history");
+    const similarForm = document.querySelector("#similar-form");
+    const similarMovieIdInput = document.querySelector("#similar-movie-id");
+    const similarLimitInput = document.querySelector("#similar-limit");
+    const similarButton = document.querySelector("#similar-button");
+    const similarStatusEl = document.querySelector("#similar-status");
+    const similarMoviesEl = document.querySelector("#similar-movies");
 
     function setStatus(message, isError = false) {
       statusEl.textContent = message;
@@ -457,6 +513,16 @@
     function setContextStatus(message, isError = false) {
       contextStatusEl.textContent = message;
       contextStatusEl.classList.toggle("error", isError);
+    }
+
+    function setSimilarStatus(message, isError = false) {
+      similarStatusEl.textContent = message;
+      similarStatusEl.classList.toggle("error", isError);
+    }
+
+    function setMovieDetailStatus(message, isError = false) {
+      movieDetailStatusEl.textContent = message;
+      movieDetailStatusEl.classList.toggle("error", isError);
     }
 
     async function getJson(url) {
@@ -528,6 +594,44 @@
       setRecommendationStatus(`${movies.length} recommendations returned.`);
     }
 
+    function similarMovieCard(movie) {
+      return `
+        <article class="movie">
+          <h3>${movie.title}</h3>
+          <div class="meta">
+            <span class="pill">${movie.genres}</span>
+            <span class="pill">rating ${movie.avg_rating}</span>
+            <span class="pill">#${movie.movie_id}</span>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderSimilarMovies(movies) {
+      if (movies.length === 0) {
+        similarMoviesEl.innerHTML = "";
+        setSimilarStatus("No similar movies returned.");
+        return;
+      }
+
+      similarMoviesEl.innerHTML = movies.map(similarMovieCard).join("");
+      setSimilarStatus(`${movies.length} similar movies returned.`);
+    }
+
+    function renderMovieDetail(movie) {
+      movieDetailEl.innerHTML = `
+        <div class="side-item">
+          <p class="side-title">${movie.title}</p>
+          <p class="side-meta">${movie.genres}</p>
+          <div class="meta" style="margin-top: 8px;">
+            <span class="pill">rating ${movie.avg_rating}</span>
+            <span class="pill">${movie.total_ratings} ratings</span>
+            <span class="pill">#${movie.movie_id}</span>
+          </div>
+        </div>
+      `;
+    }
+
     async function searchMovies() {
       const params = new URLSearchParams();
       params.set("q", queryInput.value.trim() || "Movie");
@@ -555,6 +659,23 @@
       }
     }
 
+    async function loadMovieDetail() {
+      const movieId = Number(detailMovieIdInput.value || 1);
+      detailButton.disabled = true;
+      movieDetailEl.innerHTML = "";
+      setMovieDetailStatus("Loading movie detail...");
+
+      try {
+        const movie = await getJson(`/movies/${movieId}`);
+        renderMovieDetail(movie);
+        setMovieDetailStatus(`Movie ${movie.movie_id} loaded.`);
+      } catch (error) {
+        setMovieDetailStatus(error.message, true);
+      } finally {
+        detailButton.disabled = false;
+      }
+    }
+
     async function loadRecommendations() {
       recommendationButton.disabled = true;
       recommendationsEl.innerHTML = "";
@@ -571,6 +692,23 @@
         setRecommendationStatus(error.message, true);
       } finally {
         recommendationButton.disabled = false;
+      }
+    }
+
+    async function loadSimilarMovies() {
+      const movieId = Number(similarMovieIdInput.value || 1);
+      const limit = Number(similarLimitInput.value || 5);
+      similarButton.disabled = true;
+      similarMoviesEl.innerHTML = "";
+      setSimilarStatus("Loading similar movies...");
+
+      try {
+        const movies = await getJson(`/similar_movies/${movieId}?n=${limit}`);
+        renderSimilarMovies(movies);
+      } catch (error) {
+        setSimilarStatus(error.message, true);
+      } finally {
+        similarButton.disabled = false;
       }
     }
 
@@ -662,6 +800,11 @@
       searchMovies();
     });
 
+    movieDetailForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadMovieDetail();
+    });
+
     recommendationForm.addEventListener("submit", (event) => {
       event.preventDefault();
       loadRecommendations();
@@ -670,6 +813,11 @@
     userContextForm.addEventListener("submit", (event) => {
       event.preventDefault();
       loadUserContext();
+    });
+
+    similarForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadSimilarMovies();
     });
 
     boot();
