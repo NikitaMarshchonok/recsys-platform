@@ -108,6 +108,7 @@ def test_web_app_response():
     assert "Movie Detail" in response.text
     assert "User Context" in response.text
     assert "Similar Movies" in response.text
+    assert "data-inspect-movie-id" in response.text
 
 
 def test_version():

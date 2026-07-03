@@ -222,6 +222,22 @@
       font-weight: 700;
     }
 
+    .inline-action {
+      min-height: 30px;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--accent);
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .inline-action:hover {
+      background: #edf7f5;
+      color: var(--accent-strong);
+    }
+
     .summary {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -555,6 +571,7 @@
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">${movie.total_ratings} ratings</span>
           </div>
+          <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
       `;
     }
@@ -579,6 +596,7 @@
             <span class="pill">predicted ${movie.predicted_rating}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
+          <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
       `;
     }
@@ -603,6 +621,7 @@
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
+          <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
       `;
     }
@@ -657,6 +676,13 @@
       } finally {
         searchButton.disabled = false;
       }
+    }
+
+    function inspectMovie(movieId) {
+      detailMovieIdInput.value = movieId;
+      similarMovieIdInput.value = movieId;
+      loadMovieDetail();
+      loadSimilarMovies();
     }
 
     async function loadMovieDetail() {
@@ -726,6 +752,7 @@
         <div class="side-item">
           <p class="side-title">${movie.title}</p>
           <p class="side-meta">${movie.genres} - rating ${movie.avg_rating} - ${movie.total_ratings} ratings</p>
+          <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </div>
       `).join("");
     }
@@ -818,6 +845,15 @@
     similarForm.addEventListener("submit", (event) => {
       event.preventDefault();
       loadSimilarMovies();
+    });
+
+    document.addEventListener("click", (event) => {
+      const inspectButton = event.target.closest("[data-inspect-movie-id]");
+      if (!inspectButton) {
+        return;
+      }
+
+      inspectMovie(Number(inspectButton.dataset.inspectMovieId));
     });
 
     boot();
