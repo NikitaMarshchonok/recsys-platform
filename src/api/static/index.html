@@ -107,6 +107,10 @@
       grid-template-columns: 140px 120px minmax(180px, 1fr) 150px;
     }
 
+    .user-controls {
+      grid-template-columns: minmax(120px, 1fr) 130px;
+    }
+
     label {
       display: grid;
       gap: 5px;
@@ -292,11 +296,16 @@
       .recommendation-controls {
         grid-template-columns: 1fr 1fr;
       }
+
+      .user-controls {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     @media (max-width: 520px) {
       .controls,
       .recommendation-controls,
+      .user-controls,
       .summary {
         grid-template-columns: 1fr;
       }
@@ -384,6 +393,22 @@
           <div id="summary" class="summary"></div>
         </section>
 
+        <section aria-labelledby="user-context-title" style="margin-top: 16px;">
+          <div class="section-head">
+            <h2 id="user-context-title">User Context</h2>
+          </div>
+          <form id="user-context-form" class="controls user-controls">
+            <label>
+              User ID
+              <input id="context-user-id" name="user_id" type="number" min="1" value="1">
+            </label>
+            <button id="context-button" type="submit">Load</button>
+          </form>
+          <p id="context-status" class="status">Load a user profile and recent ratings.</p>
+          <div id="user-profile" class="summary"></div>
+          <div id="user-history" class="side-list"></div>
+        </section>
+
         <section aria-labelledby="top-title" style="margin-top: 16px;">
           <div class="section-head">
             <h2 id="top-title">Top Movies</h2>
@@ -412,6 +437,12 @@
     const recommendationButton = document.querySelector("#recommend-button");
     const recommendationStatusEl = document.querySelector("#recommendation-status");
     const recommendationsEl = document.querySelector("#recommendations");
+    const userContextForm = document.querySelector("#user-context-form");
+    const contextUserIdInput = document.querySelector("#context-user-id");
+    const contextButton = document.querySelector("#context-button");
+    const contextStatusEl = document.querySelector("#context-status");
+    const userProfileEl = document.querySelector("#user-profile");
+    const userHistoryEl = document.querySelector("#user-history");
 
     function setStatus(message, isError = false) {
       statusEl.textContent = message;
@@ -421,6 +452,11 @@
     function setRecommendationStatus(message, isError = false) {
       recommendationStatusEl.textContent = message;
       recommendationStatusEl.classList.toggle("error", isError);
+    }
+
+    function setContextStatus(message, isError = false) {
+      contextStatusEl.textContent = message;
+      contextStatusEl.classList.toggle("error", isError);
     }
 
     async function getJson(url) {
@@ -556,6 +592,49 @@
       `).join("");
     }
 
+    function renderUserProfile(profile) {
+      userProfileEl.innerHTML = `
+        <div class="metric"><span>Total rated</span><strong>${profile.total_rated}</strong></div>
+        <div class="metric"><span>Avg rating</span><strong>${profile.avg_rating}</strong></div>
+      `;
+    }
+
+    function renderUserHistory(history) {
+      if (history.length === 0) {
+        userHistoryEl.innerHTML = "";
+        return;
+      }
+
+      userHistoryEl.innerHTML = history.map((item) => `
+        <div class="side-item">
+          <p class="side-title">${item.title}</p>
+          <p class="side-meta">${item.genres} - user rating ${item.rating}</p>
+        </div>
+      `).join("");
+    }
+
+    async function loadUserContext() {
+      const userId = Number(contextUserIdInput.value || 1);
+      contextButton.disabled = true;
+      userProfileEl.innerHTML = "";
+      userHistoryEl.innerHTML = "";
+      setContextStatus("Loading user context...");
+
+      try {
+        const [profile, history] = await Promise.all([
+          getJson(`/users/${userId}/profile`),
+          getJson(`/users/${userId}/history?n=5`),
+        ]);
+        renderUserProfile(profile);
+        renderUserHistory(history);
+        setContextStatus(`User ${userId}: ${profile.total_rated} ratings loaded.`);
+      } catch (error) {
+        setContextStatus(error.message, true);
+      } finally {
+        contextButton.disabled = false;
+      }
+    }
+
     async function loadGenres() {
       const genres = await getJson("/movies/genres");
       genreSelect.innerHTML += genres
@@ -586,6 +665,11 @@
     recommendationForm.addEventListener("submit", (event) => {
       event.preventDefault();
       loadRecommendations();
+    });
+
+    userContextForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadUserContext();
     });
 
     boot();

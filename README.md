@@ -151,7 +151,7 @@ Request personalized recommendations:
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | GET | `/` | Root status message |
-| GET | `/app` | Browser demo UI for catalog exploration and recommendations |
+| GET | `/app` | Browser demo UI for catalog exploration, recommendations, and user context |
 | GET | `/health` | Lightweight health check |
 | GET | `/version` | Service name and API version |
 | GET | `/ready` | Readiness check for model and data artifacts |
