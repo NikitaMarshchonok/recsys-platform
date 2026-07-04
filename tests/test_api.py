@@ -110,6 +110,8 @@ def test_web_app_response():
     assert "Similar Movies" in response.text
     assert "data-inspect-movie-id" in response.text
     assert "Horizon, River, Storm" in response.text
+    assert "Quick searches" in response.text
+    assert "data-search-query" in response.text
 
 
 def test_version():

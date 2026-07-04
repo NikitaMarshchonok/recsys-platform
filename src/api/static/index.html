@@ -238,6 +238,35 @@
       color: var(--accent-strong);
     }
 
+    .quick-searches {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: -2px 0 14px;
+    }
+
+    .quick-search-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chip-button {
+      min-height: 30px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--accent);
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chip-button:hover {
+      background: #edf7f5;
+      color: var(--accent-strong);
+    }
+
     .summary {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -379,6 +408,14 @@
             </label>
             <button id="search-button" type="submit">Search</button>
           </form>
+
+          <div class="quick-searches" aria-label="Suggested searches">
+            <span class="quick-search-label">Quick searches</span>
+            <button class="chip-button" type="button" data-search-query="">Top rated</button>
+            <button class="chip-button" type="button" data-search-query="Horizon">Horizon</button>
+            <button class="chip-button" type="button" data-search-query="River">River</button>
+            <button class="chip-button" type="button" data-search-query="Storm">Storm</button>
+          </div>
 
           <p id="search-status" class="status">Loading top catalog matches...</p>
           <div id="results" class="grid"></div>
@@ -853,6 +890,13 @@
     });
 
     document.addEventListener("click", (event) => {
+      const searchButton = event.target.closest("[data-search-query]");
+      if (searchButton) {
+        queryInput.value = searchButton.dataset.searchQuery;
+        searchMovies();
+        return;
+      }
+
       const inspectButton = event.target.closest("[data-inspect-movie-id]");
       if (!inspectButton) {
         return;
