@@ -267,6 +267,13 @@
       color: var(--accent-strong);
     }
 
+    .chip-button.active,
+    .chip-button[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
     .summary {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -411,10 +418,10 @@
 
           <div class="quick-searches" aria-label="Suggested searches">
             <span class="quick-search-label">Quick searches</span>
-            <button class="chip-button" type="button" data-search-query="">Top rated</button>
-            <button class="chip-button" type="button" data-search-query="Horizon">Horizon</button>
-            <button class="chip-button" type="button" data-search-query="River">River</button>
-            <button class="chip-button" type="button" data-search-query="Storm">Storm</button>
+            <button class="chip-button active" type="button" data-search-query="" aria-pressed="true">Top rated</button>
+            <button class="chip-button" type="button" data-search-query="Horizon" aria-pressed="false">Horizon</button>
+            <button class="chip-button" type="button" data-search-query="River" aria-pressed="false">River</button>
+            <button class="chip-button" type="button" data-search-query="Storm" aria-pressed="false">Storm</button>
           </div>
 
           <p id="search-status" class="status">Loading top catalog matches...</p>
@@ -690,9 +697,21 @@
       `;
     }
 
+    function setActiveSearchChip(query) {
+      const normalizedQuery = query.trim().toLowerCase();
+      document.querySelectorAll("[data-search-query]").forEach((button) => {
+        const buttonQuery = button.dataset.searchQuery.trim().toLowerCase();
+        const isActive = buttonQuery === normalizedQuery;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
     async function searchMovies() {
       const params = new URLSearchParams();
       const query = queryInput.value.trim();
+      setActiveSearchChip(query);
+
       if (query) {
         params.set("q", query);
       }
@@ -890,9 +909,9 @@
     });
 
     document.addEventListener("click", (event) => {
-      const searchButton = event.target.closest("[data-search-query]");
-      if (searchButton) {
-        queryInput.value = searchButton.dataset.searchQuery;
+      const searchChip = event.target.closest("[data-search-query]");
+      if (searchChip) {
+        queryInput.value = searchChip.dataset.searchQuery;
         searchMovies();
         return;
       }

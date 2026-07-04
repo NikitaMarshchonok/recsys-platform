@@ -112,6 +112,7 @@ def test_web_app_response():
     assert "Horizon, River, Storm" in response.text
     assert "Quick searches" in response.text
     assert "data-search-query" in response.text
+    assert 'aria-pressed="true">Top rated' in response.text
 
 
 def test_version():
