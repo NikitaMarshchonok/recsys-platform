@@ -510,16 +510,20 @@ def movie_genres():
 
 @app.get("/movies/search", response_model=list[MovieDetailResponse])
 def search_movies(
-    q: str = Query(..., min_length=1, max_length=100),
+    q: str = Query(default="", max_length=100),
     n: int = Query(default=10, ge=1, le=50),
     genre: str | None = Query(default=None, min_length=1),
     min_rating: float | None = Query(default=None, ge=0, le=5),
 ):
     movie_features = pd.read_csv(settings.movie_features_path)
 
-    matches = movie_features[
-        movie_features["title"].str.contains(q, case=False, na=False)
-    ]
+    query = q.strip()
+    matches = movie_features
+
+    if query:
+        matches = matches[
+            matches["title"].str.contains(query, case=False, na=False)
+        ]
 
     if genre is not None:
         matches = matches[matches["genres"].str.lower() == genre.lower()]

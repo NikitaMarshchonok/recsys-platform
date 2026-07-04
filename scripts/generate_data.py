@@ -9,11 +9,54 @@ N_USERS = 500
 N_MOVIES = 200
 N_RATINGS = 20000
 
+TITLE_PREFIXES = [
+    "Silent",
+    "Neon",
+    "Hidden",
+    "Last",
+    "Golden",
+    "Midnight",
+    "Crimson",
+    "Broken",
+    "Electric",
+    "Lost",
+    "Winter",
+    "Summer",
+    "Paper",
+    "Silver",
+    "Wild",
+    "Blue",
+    "Burning",
+    "Secret",
+    "Velvet",
+    "Northern",
+]
+
+TITLE_NOUNS = [
+    "Horizon",
+    "Harbor",
+    "Signal",
+    "Journey",
+    "Promise",
+    "Kingdom",
+    "Echo",
+    "River",
+    "City",
+    "Storm",
+]
+
+
+def build_movie_title(movie_id):
+    prefix = TITLE_PREFIXES[(movie_id - 1) % len(TITLE_PREFIXES)]
+    noun = TITLE_NOUNS[(movie_id - 1) // len(TITLE_PREFIXES)]
+    return f"{prefix} {noun}"
+
+
 # Фильмы с жанрами
 genres = ["Action", "Comedy", "Drama", "Thriller", "Romance", "Sci-Fi"]
 movies = pd.DataFrame({
     "movieId": range(1, N_MOVIES + 1),
-    "title": [f"Movie_{i}" for i in range(1, N_MOVIES + 1)],
+    "title": [build_movie_title(i) for i in range(1, N_MOVIES + 1)],
     "genres": np.random.choice(genres, N_MOVIES),
 })
 

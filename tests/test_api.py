@@ -109,6 +109,7 @@ def test_web_app_response():
     assert "User Context" in response.text
     assert "Similar Movies" in response.text
     assert "data-inspect-movie-id" in response.text
+    assert "Horizon, River, Storm" in response.text
 
 
 def test_version():
@@ -417,6 +418,38 @@ def test_movie_search_response(monkeypatch):
             "genres": "Drama",
             "avg_rating": 4.4,
             "total_ratings": 100,
+        },
+    ]
+
+
+def test_movie_search_allows_empty_query(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Silent Horizon", "Neon Journey", "Broken River"],
+        "genres": ["Drama", "Action", "Drama"],
+        "avg_rating": [4.4, 4.9, 4.8],
+        "total_ratings": [100, 80, 120],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/search?n=2&min_rating=4.5")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "movie_id": 2,
+            "title": "Neon Journey",
+            "genres": "Action",
+            "avg_rating": 4.9,
+            "total_ratings": 80,
+        },
+        {
+            "movie_id": 3,
+            "title": "Broken River",
+            "genres": "Drama",
+            "avg_rating": 4.8,
+            "total_ratings": 120,
         },
     ]
 

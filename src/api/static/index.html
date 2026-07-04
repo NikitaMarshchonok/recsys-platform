@@ -361,7 +361,7 @@
           <form id="search-form" class="controls">
             <label>
               Title
-              <input id="query" name="q" value="Movie" autocomplete="off">
+              <input id="query" name="q" placeholder="Horizon, River, Storm" autocomplete="off">
             </label>
             <label>
               Genre
@@ -380,7 +380,7 @@
             <button id="search-button" type="submit">Search</button>
           </form>
 
-          <p id="search-status" class="status">Loading catalog...</p>
+          <p id="search-status" class="status">Loading top catalog matches...</p>
           <div id="results" class="grid"></div>
         </section>
 
@@ -576,15 +576,17 @@
       `;
     }
 
-    function renderMovies(movies) {
+    function renderMovies(movies, query = "") {
       if (movies.length === 0) {
         resultsEl.innerHTML = "";
-        setStatus("No movies match these filters.");
+        const searchLabel = query ? ` "${query}"` : "";
+        setStatus(`No movies match${searchLabel} with these filters.`);
         return;
       }
 
       resultsEl.innerHTML = movies.map(movieCard).join("");
-      setStatus(`${movies.length} movies found.`);
+      const searchLabel = query ? ` for "${query}"` : "";
+      setStatus(`${movies.length} movies found${searchLabel}.`);
     }
 
     function recommendationCard(movie) {
@@ -653,7 +655,10 @@
 
     async function searchMovies() {
       const params = new URLSearchParams();
-      params.set("q", queryInput.value.trim() || "Movie");
+      const query = queryInput.value.trim();
+      if (query) {
+        params.set("q", query);
+      }
       params.set("n", limitInput.value || "8");
 
       if (genreSelect.value) {
@@ -669,7 +674,7 @@
 
       try {
         const movies = await getJson(`/movies/search?${params.toString()}`);
-        renderMovies(movies);
+        renderMovies(movies, query);
       } catch (error) {
         resultsEl.innerHTML = "";
         setStatus(error.message, true);
