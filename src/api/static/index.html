@@ -422,6 +422,7 @@
             <button class="chip-button" type="button" data-search-query="Horizon" aria-pressed="false">Horizon</button>
             <button class="chip-button" type="button" data-search-query="River" aria-pressed="false">River</button>
             <button class="chip-button" type="button" data-search-query="Storm" aria-pressed="false">Storm</button>
+            <button id="reset-search-button" class="chip-button" type="button">Reset filters</button>
           </div>
 
           <p id="search-status" class="status">Loading top catalog matches...</p>
@@ -707,6 +708,14 @@
       });
     }
 
+    function resetSearchFilters() {
+      queryInput.value = "";
+      genreSelect.value = "";
+      minRatingInput.value = "3.0";
+      limitInput.value = "8";
+      searchMovies();
+    }
+
     async function searchMovies() {
       const params = new URLSearchParams();
       const query = queryInput.value.trim();
@@ -909,6 +918,12 @@
     });
 
     document.addEventListener("click", (event) => {
+      const resetButton = event.target.closest("#reset-search-button");
+      if (resetButton) {
+        resetSearchFilters();
+        return;
+      }
+
       const searchChip = event.target.closest("[data-search-query]");
       if (searchChip) {
         queryInput.value = searchChip.dataset.searchQuery;

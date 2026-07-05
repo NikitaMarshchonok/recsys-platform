@@ -113,6 +113,8 @@ def test_web_app_response():
     assert "Quick searches" in response.text
     assert "data-search-query" in response.text
     assert 'aria-pressed="true">Top rated' in response.text
+    assert "reset-search-button" in response.text
+    assert "Reset filters" in response.text
 
 
 def test_version():
