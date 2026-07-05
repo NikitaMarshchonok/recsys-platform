@@ -844,6 +844,7 @@
         <div class="side-item">
           <p class="side-title">${item.title}</p>
           <p class="side-meta">${item.genres} - user rating ${item.rating}</p>
+          <button class="inline-action" type="button" data-inspect-movie-id="${item.movie_id}" aria-label="Inspect ${item.title} from user history">Inspect</button>
         </div>
       `).join("");
     }

@@ -115,6 +115,7 @@ def test_web_app_response():
     assert 'aria-pressed="true">Top rated' in response.text
     assert "reset-search-button" in response.text
     assert "Reset filters" in response.text
+    assert "from user history" in response.text
 
 
 def test_version():
