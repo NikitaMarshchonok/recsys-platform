@@ -116,6 +116,8 @@ def test_web_app_response():
     assert "reset-search-button" in response.text
     assert "Reset filters" in response.text
     assert "from user history" in response.text
+    assert "Sample users" in response.text
+    assert "data-sample-user-id" in response.text
 
 
 def test_version():

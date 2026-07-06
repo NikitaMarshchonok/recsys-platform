@@ -510,6 +510,12 @@
             </label>
             <button id="context-button" type="submit">Load</button>
           </form>
+          <div class="quick-searches" aria-label="Sample users">
+            <span class="quick-search-label">Sample users</span>
+            <button class="chip-button" type="button" data-sample-user-id="1">User 1</button>
+            <button class="chip-button" type="button" data-sample-user-id="42">User 42</button>
+            <button class="chip-button" type="button" data-sample-user-id="101">User 101</button>
+          </div>
           <p id="context-status" class="status">Load a user profile and recent ratings.</p>
           <div id="user-profile" class="summary"></div>
           <div id="user-history" class="side-list"></div>
@@ -929,6 +935,15 @@
       if (searchChip) {
         queryInput.value = searchChip.dataset.searchQuery;
         searchMovies();
+        return;
+      }
+
+      const sampleUserButton = event.target.closest("[data-sample-user-id]");
+      if (sampleUserButton) {
+        const userId = sampleUserButton.dataset.sampleUserId;
+        contextUserIdInput.value = userId;
+        recommendationUserIdInput.value = userId;
+        loadUserContext();
         return;
       }
 
