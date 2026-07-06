@@ -512,9 +512,9 @@
           </form>
           <div class="quick-searches" aria-label="Sample users">
             <span class="quick-search-label">Sample users</span>
-            <button class="chip-button" type="button" data-sample-user-id="1">User 1</button>
-            <button class="chip-button" type="button" data-sample-user-id="42">User 42</button>
-            <button class="chip-button" type="button" data-sample-user-id="101">User 101</button>
+            <button class="chip-button active" type="button" data-sample-user-id="1" aria-pressed="true">User 1</button>
+            <button class="chip-button" type="button" data-sample-user-id="42" aria-pressed="false">User 42</button>
+            <button class="chip-button" type="button" data-sample-user-id="101" aria-pressed="false">User 101</button>
           </div>
           <p id="context-status" class="status">Load a user profile and recent ratings.</p>
           <div id="user-profile" class="summary"></div>
@@ -714,6 +714,14 @@
       });
     }
 
+    function setActiveSampleUser(userId) {
+      document.querySelectorAll("[data-sample-user-id]").forEach((button) => {
+        const isActive = button.dataset.sampleUserId === String(userId);
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
     function resetSearchFilters() {
       queryInput.value = "";
       genreSelect.value = "";
@@ -857,6 +865,7 @@
 
     async function loadUserContext() {
       const userId = Number(contextUserIdInput.value || 1);
+      setActiveSampleUser(userId);
       contextButton.disabled = true;
       userProfileEl.innerHTML = "";
       userHistoryEl.innerHTML = "";
