@@ -119,6 +119,7 @@ def test_web_app_response():
     assert "Sample users" in response.text
     assert "data-sample-user-id" in response.text
     assert 'aria-pressed="true">User 1' in response.text
+    assert "escapeHtml" in response.text
 
 
 def test_version():

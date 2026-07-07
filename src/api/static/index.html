@@ -613,12 +613,26 @@
       return response.json();
     }
 
+    function escapeHtml(value) {
+      const escapeMap = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      };
+      return String(value).replace(/[&<>"']/g, (char) => escapeMap[char]);
+    }
+
     function movieCard(movie) {
+      const title = escapeHtml(movie.title);
+      const genres = escapeHtml(movie.genres);
+
       return `
         <article class="movie">
-          <h3>${movie.title}</h3>
+          <h3>${title}</h3>
           <div class="meta">
-            <span class="pill">${movie.genres}</span>
+            <span class="pill">${genres}</span>
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">${movie.total_ratings} ratings</span>
           </div>
@@ -641,11 +655,14 @@
     }
 
     function recommendationCard(movie) {
+      const title = escapeHtml(movie.title);
+      const genres = escapeHtml(movie.genres);
+
       return `
         <article class="movie">
-          <h3>${movie.title}</h3>
+          <h3>${title}</h3>
           <div class="meta">
-            <span class="pill">${movie.genres}</span>
+            <span class="pill">${genres}</span>
             <span class="pill">predicted ${movie.predicted_rating}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
@@ -666,11 +683,14 @@
     }
 
     function similarMovieCard(movie) {
+      const title = escapeHtml(movie.title);
+      const genres = escapeHtml(movie.genres);
+
       return `
         <article class="movie">
-          <h3>${movie.title}</h3>
+          <h3>${title}</h3>
           <div class="meta">
-            <span class="pill">${movie.genres}</span>
+            <span class="pill">${genres}</span>
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
@@ -691,10 +711,13 @@
     }
 
     function renderMovieDetail(movie) {
+      const title = escapeHtml(movie.title);
+      const genres = escapeHtml(movie.genres);
+
       movieDetailEl.innerHTML = `
         <div class="side-item">
-          <p class="side-title">${movie.title}</p>
-          <p class="side-meta">${movie.genres}</p>
+          <p class="side-title">${title}</p>
+          <p class="side-meta">${genres}</p>
           <div class="meta" style="margin-top: 8px;">
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">${movie.total_ratings} ratings</span>
@@ -834,8 +857,8 @@
     function renderTopMovies(movies) {
       topMoviesEl.innerHTML = movies.map((movie) => `
         <div class="side-item">
-          <p class="side-title">${movie.title}</p>
-          <p class="side-meta">${movie.genres} - rating ${movie.avg_rating} - ${movie.total_ratings} ratings</p>
+          <p class="side-title">${escapeHtml(movie.title)}</p>
+          <p class="side-meta">${escapeHtml(movie.genres)} - rating ${movie.avg_rating} - ${movie.total_ratings} ratings</p>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </div>
       `).join("");
@@ -856,9 +879,9 @@
 
       userHistoryEl.innerHTML = history.map((item) => `
         <div class="side-item">
-          <p class="side-title">${item.title}</p>
-          <p class="side-meta">${item.genres} - user rating ${item.rating}</p>
-          <button class="inline-action" type="button" data-inspect-movie-id="${item.movie_id}" aria-label="Inspect ${item.title} from user history">Inspect</button>
+          <p class="side-title">${escapeHtml(item.title)}</p>
+          <p class="side-meta">${escapeHtml(item.genres)} - user rating ${item.rating}</p>
+          <button class="inline-action" type="button" data-inspect-movie-id="${item.movie_id}" aria-label="Inspect ${escapeHtml(item.title)} from user history">Inspect</button>
         </div>
       `).join("");
     }
@@ -889,7 +912,7 @@
     async function loadGenres() {
       const genres = await getJson("/movies/genres");
       genreSelect.innerHTML += genres
-        .map((genre) => `<option value="${genre.genre}">${genre.genre}</option>`)
+        .map((genre) => `<option value="${escapeHtml(genre.genre)}">${escapeHtml(genre.genre)}</option>`)
         .join("");
     }
 
