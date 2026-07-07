@@ -51,6 +51,9 @@ async def request_tracing_middleware(request, call_next):
     latency_ms = (time.perf_counter() - start_time) * 1000
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Response-Time-ms"] = f"{latency_ms:.2f}"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "same-origin"
     logger.info(
         "request_completed request_id=%s method=%s path=%s status_code=%s latency_ms=%.2f",
         request_id,

@@ -135,6 +135,14 @@ def test_request_tracing_headers():
     assert float(response.headers["X-Response-Time-ms"]) >= 0
 
 
+def test_security_headers():
+    response = client.get("/health")
+
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Referrer-Policy"] == "same-origin"
+
+
 def test_readiness():
     response = client.get("/ready")
     assert response.status_code == 200
