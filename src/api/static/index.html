@@ -74,6 +74,13 @@
       gap: 16px;
     }
 
+    .sidebar {
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+
     section {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -345,6 +352,12 @@
         grid-template-columns: 1fr;
       }
 
+      .sidebar {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+
       .controls {
         grid-template-columns: 1fr 1fr;
       }
@@ -476,7 +489,7 @@
         </section>
       </div>
 
-      <aside>
+      <aside class="sidebar">
         <section aria-labelledby="summary-title">
           <div class="section-head">
             <h2 id="summary-title">Catalog Summary</h2>

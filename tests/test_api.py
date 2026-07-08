@@ -120,6 +120,8 @@ def test_web_app_response():
     assert "data-sample-user-id" in response.text
     assert 'aria-pressed="true">User 1' in response.text
     assert "escapeHtml" in response.text
+    assert 'class="sidebar"' in response.text
+    assert "position: sticky" in response.text
 
 
 def test_version():
