@@ -150,7 +150,7 @@ Request personalized recommendations:
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| GET | `/` | Root status message |
+| GET | `/` | Redirects to the browser demo UI |
 | GET | `/app` | Browser demo UI for catalog exploration, movie details, recommendations, user context, and similar movies |
 | GET | `/health` | Lightweight health check |
 | GET | `/version` | Service name and API version |

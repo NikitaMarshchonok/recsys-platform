@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 import logging
 import pandas as pd
@@ -227,11 +227,6 @@ class UserRatingHistoryResponse(BaseModel):
     timestamp: int
 
 
-class RootResponse(BaseModel):
-    status: str
-    message: str
-
-
 class HealthResponse(BaseModel):
     status: str
 
@@ -272,10 +267,10 @@ class CatalogSummaryResponse(BaseModel):
     most_rated_movie_id: int | None
     most_rated_title: str | None
 
-# Главная страница — проверка что API работает
-@app.get("/", response_model=RootResponse)
+# Главная страница открывает демо-интерфейс для портфолио.
+@app.get("/", response_class=RedirectResponse, include_in_schema=False)
 def root():
-    return {"status": "ok", "message": "RecSys API работает"}
+    return RedirectResponse(url="/app")
 
 
 @app.get("/app", response_class=FileResponse, include_in_schema=False)

@@ -92,10 +92,10 @@ def test_health():
 
 
 def test_root_response():
-    response = client.get("/")
+    response = client.get("/", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok", "message": "RecSys API работает"}
+    assert response.status_code == 307
+    assert response.headers["location"] == "/app"
 
 
 def test_web_app_response():
@@ -601,12 +601,10 @@ def test_user_rating_history_not_found(monkeypatch):
     assert response.json() == {"detail": "У пользователя 999 нет истории оценок"}
 
 
-def test_openapi_has_root_and_health_response_schemas():
+def test_openapi_has_health_response_schema():
     schema = app.openapi()
 
-    assert schema["paths"]["/"]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
-        "$ref": "#/components/schemas/RootResponse"
-    }
+    assert "/" not in schema["paths"]
     assert schema["paths"]["/health"]["get"]["responses"]["200"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/HealthResponse"
     }
