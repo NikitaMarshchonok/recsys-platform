@@ -2,14 +2,17 @@ PYTHON ?= python
 JAVA_HOME ?= /opt/homebrew/opt/openjdk@17
 MLFLOW_TRACKING_URI ?= file:./mlruns
 API_PORT ?= 8001
+MOVIELENS_DIR ?= data/external/ml-latest-small
+RAW_DATA_DIR ?= data/raw
 
-.PHONY: help install test generate-data features train pipeline run-api docker-up docker-down
+.PHONY: help install test generate-data import-movielens features train pipeline run-api docker-up docker-down
 
 help:
 	@echo "Available commands:"
 	@echo "  make install        Install Python dependencies"
 	@echo "  make test           Run fast API tests"
 	@echo "  make generate-data  Generate synthetic ratings data"
+	@echo "  make import-movielens Import MovieLens CSV files into data/raw"
 	@echo "  make features       Run Spark feature engineering"
 	@echo "  make train          Train the ALS model"
 	@echo "  make pipeline       Run data generation, features, and training"
@@ -25,6 +28,9 @@ test:
 
 generate-data:
 	$(PYTHON) scripts/generate_data.py
+
+import-movielens:
+	$(PYTHON) scripts/import_movielens.py --source-dir $(MOVIELENS_DIR) --output-dir $(RAW_DATA_DIR)
 
 features:
 	JAVA_HOME=$(JAVA_HOME) $(PYTHON) spark/jobs/feature_engineering.py

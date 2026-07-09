@@ -69,6 +69,13 @@ Generate sample data:
 python scripts/generate_data.py
 ```
 
+Or import a real MovieLens catalog after placing `movies.csv` and `ratings.csv`
+under `data/external/ml-latest-small/`:
+
+```bash
+make import-movielens
+```
+
 Run feature engineering:
 
 ```bash
@@ -98,6 +105,7 @@ Common commands are also available through `make`:
 
 ```bash
 make test
+make import-movielens
 make pipeline
 make run-api
 ```
