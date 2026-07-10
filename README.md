@@ -76,6 +76,14 @@ under `data/external/ml-latest-small/`:
 make import-movielens
 ```
 
+For MovieLens exports that use `movie.csv` and `rating.csv`, pass explicit files:
+
+```bash
+make import-movielens \
+  MOVIELENS_MOVIES_FILE=data/raw/movie.csv \
+  MOVIELENS_RATINGS_FILE=data/raw/rating.csv
+```
+
 Run feature engineering:
 
 ```bash

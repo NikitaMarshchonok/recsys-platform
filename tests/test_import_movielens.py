@@ -64,3 +64,65 @@ def test_import_movielens_requires_expected_columns(tmp_path):
 
     with pytest.raises(ValueError, match="genres"):
         import_movielens(source_dir, output_dir)
+
+
+def test_import_movielens_supports_singular_files_and_datetime_timestamps(tmp_path):
+    source_dir = tmp_path / "ml-20m"
+    output_dir = tmp_path / "raw"
+    source_dir.mkdir()
+
+    pd.DataFrame({
+        "movieId": [1],
+        "title": ["Toy Story (1995)"],
+        "genres": ["Adventure|Animation|Children|Comedy|Fantasy"],
+    }).to_csv(source_dir / "movie.csv", index=False)
+    pd.DataFrame({
+        "userId": [7],
+        "movieId": [1],
+        "rating": [4.5],
+        "timestamp": ["2005-04-02 23:53:47"],
+    }).to_csv(source_dir / "rating.csv", index=False)
+
+    summary = import_movielens(source_dir, output_dir)
+
+    ratings = pd.read_csv(output_dir / "ratings.csv")
+
+    assert summary == {"movies": 1, "ratings": 1, "users": 1}
+    assert ratings.to_dict("records") == [
+        {
+            "userId": 7,
+            "movieId": 1,
+            "rating": 4.5,
+            "timestamp": 1112486027,
+        }
+    ]
+
+
+def test_import_movielens_accepts_explicit_source_files(tmp_path):
+    source_dir = tmp_path / "source"
+    output_dir = tmp_path / "raw"
+    source_dir.mkdir()
+
+    movies_file = source_dir / "custom_movies.csv"
+    ratings_file = source_dir / "custom_ratings.csv"
+
+    pd.DataFrame({
+        "movieId": [1],
+        "title": ["Toy Story (1995)"],
+        "genres": ["Adventure|Animation|Children"],
+    }).to_csv(movies_file, index=False)
+    pd.DataFrame({
+        "userId": [1],
+        "movieId": [1],
+        "rating": [4.0],
+        "timestamp": [964982703],
+    }).to_csv(ratings_file, index=False)
+
+    summary = import_movielens(
+        source_dir,
+        output_dir,
+        movies_file=movies_file,
+        ratings_file=ratings_file,
+    )
+
+    assert summary == {"movies": 1, "ratings": 1, "users": 1}

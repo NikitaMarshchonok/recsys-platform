@@ -10,6 +10,24 @@ MOVIES_COLUMNS = ["movieId", "title", "genres"]
 RATINGS_COLUMNS = ["userId", "movieId", "rating", "timestamp"]
 
 
+def resolve_source_file(
+    source_dir: Path,
+    explicit_path: Path | None,
+    candidates: list[str],
+    label: str,
+) -> Path:
+    if explicit_path is not None:
+        return explicit_path
+
+    for candidate in candidates:
+        path = source_dir / candidate
+        if path.exists():
+            return path
+
+    names = ", ".join(candidates)
+    raise FileNotFoundError(f"Required MovieLens {label} file not found. Expected one of: {names}")
+
+
 def read_csv_with_columns(path: Path, required_columns: list[str]) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Required MovieLens file not found: {path}")
@@ -43,8 +61,18 @@ def normalize_ratings(ratings: pd.DataFrame) -> pd.DataFrame:
     normalized["userId"] = normalized["userId"].astype(int)
     normalized["movieId"] = normalized["movieId"].astype(int)
     normalized["rating"] = normalized["rating"].astype(float)
-    normalized["timestamp"] = normalized["timestamp"].astype(int)
+    normalized["timestamp"] = normalize_timestamp(normalized["timestamp"])
     return normalized.sort_values(["userId", "movieId"]).reset_index(drop=True)
+
+
+def normalize_timestamp(timestamp: pd.Series) -> pd.Series:
+    numeric_timestamp = pd.to_numeric(timestamp, errors="coerce")
+
+    if numeric_timestamp.notna().all():
+        return numeric_timestamp.astype(int)
+
+    parsed_timestamp = pd.to_datetime(timestamp, errors="raise", utc=True)
+    return (parsed_timestamp.astype("int64") // 1_000_000_000).astype(int)
 
 
 def build_users(ratings: pd.DataFrame) -> pd.DataFrame:
@@ -52,15 +80,32 @@ def build_users(ratings: pd.DataFrame) -> pd.DataFrame:
     return users.reset_index(drop=True)
 
 
-def import_movielens(source_dir: Path, output_dir: Path) -> dict[str, int]:
+def import_movielens(
+    source_dir: Path,
+    output_dir: Path,
+    movies_file: Path | None = None,
+    ratings_file: Path | None = None,
+) -> dict[str, int]:
     source_dir = Path(source_dir)
     output_dir = Path(output_dir)
+    movies_path = resolve_source_file(
+        source_dir,
+        movies_file,
+        ["movies.csv", "movie.csv"],
+        "movies",
+    )
+    ratings_path = resolve_source_file(
+        source_dir,
+        ratings_file,
+        ["ratings.csv", "rating.csv"],
+        "ratings",
+    )
 
     movies = normalize_movies(
-        read_csv_with_columns(source_dir / "movies.csv", MOVIES_COLUMNS)
+        read_csv_with_columns(movies_path, MOVIES_COLUMNS)
     )
     ratings = normalize_ratings(
-        read_csv_with_columns(source_dir / "ratings.csv", RATINGS_COLUMNS)
+        read_csv_with_columns(ratings_path, RATINGS_COLUMNS)
     )
     users = build_users(ratings)
 
@@ -84,7 +129,19 @@ def parse_args() -> argparse.Namespace:
         "--source-dir",
         type=Path,
         default=Path("data/external/ml-latest-small"),
-        help="Directory containing MovieLens movies.csv and ratings.csv.",
+        help="Directory containing MovieLens movie metadata and ratings CSV files.",
+    )
+    parser.add_argument(
+        "--movies-file",
+        type=Path,
+        default=None,
+        help="Optional explicit path to MovieLens movies.csv or movie.csv.",
+    )
+    parser.add_argument(
+        "--ratings-file",
+        type=Path,
+        default=None,
+        help="Optional explicit path to MovieLens ratings.csv or rating.csv.",
     )
     parser.add_argument(
         "--output-dir",
@@ -97,7 +154,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    summary = import_movielens(args.source_dir, args.output_dir)
+    summary = import_movielens(
+        args.source_dir,
+        args.output_dir,
+        movies_file=args.movies_file,
+        ratings_file=args.ratings_file,
+    )
 
     print(f"Imported movies: {summary['movies']}")
     print(f"Imported ratings: {summary['ratings']}")

@@ -3,6 +3,8 @@ JAVA_HOME ?= /opt/homebrew/opt/openjdk@17
 MLFLOW_TRACKING_URI ?= file:./mlruns
 API_PORT ?= 8001
 MOVIELENS_DIR ?= data/external/ml-latest-small
+MOVIELENS_MOVIES_FILE ?=
+MOVIELENS_RATINGS_FILE ?=
 RAW_DATA_DIR ?= data/raw
 
 .PHONY: help install test generate-data import-movielens features train pipeline run-api docker-up docker-down
@@ -30,7 +32,7 @@ generate-data:
 	$(PYTHON) scripts/generate_data.py
 
 import-movielens:
-	$(PYTHON) scripts/import_movielens.py --source-dir $(MOVIELENS_DIR) --output-dir $(RAW_DATA_DIR)
+	$(PYTHON) scripts/import_movielens.py --source-dir $(MOVIELENS_DIR) $(if $(MOVIELENS_MOVIES_FILE),--movies-file $(MOVIELENS_MOVIES_FILE),) $(if $(MOVIELENS_RATINGS_FILE),--ratings-file $(MOVIELENS_RATINGS_FILE),) --output-dir $(RAW_DATA_DIR)
 
 features:
 	JAVA_HOME=$(JAVA_HOME) $(PYTHON) spark/jobs/feature_engineering.py
