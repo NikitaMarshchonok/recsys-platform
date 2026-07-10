@@ -18,7 +18,7 @@ class FakeRecommendations:
     def collect(self):
         return [{
             "recommendations": [
-                {"movieId": 1, "rating": 4.8},
+                {"movieId": 1, "rating": 5.94},
                 {"movieId": 2, "rating": 4.5},
                 {"movieId": 3, "rating": 4.2},
                 {"movieId": 4, "rating": 4.0},
@@ -120,6 +120,7 @@ def test_web_app_response():
     assert "data-sample-user-id" in response.text
     assert 'aria-pressed="true">User 1' in response.text
     assert "escapeHtml" in response.text
+    assert "raw_predicted_rating" in response.text
     assert 'class="sidebar"' in response.text
     assert "position: sticky" in response.text
 
@@ -234,6 +235,8 @@ def test_recommend_valid_user():
     assert "movie_id" in data[0]
     assert "title" in data[0]
     assert "predicted_rating" in data[0]
+    assert data[0]["predicted_rating"] == 5.0
+    assert data[0]["raw_predicted_rating"] == 5.94
 
 
 def test_recommend_openapi_example_uses_valid_user():
@@ -265,8 +268,20 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == [
-        {"movie_id": 3, "title": "Movie 3", "genres": "Comedy", "predicted_rating": 4.8},
-        {"movie_id": 2, "title": "Movie 2", "genres": "Action", "predicted_rating": 4.8},
+        {
+            "movie_id": 3,
+            "title": "Movie 3",
+            "genres": "Comedy",
+            "predicted_rating": 4.8,
+            "raw_predicted_rating": 4.8,
+        },
+        {
+            "movie_id": 2,
+            "title": "Movie 2",
+            "genres": "Action",
+            "predicted_rating": 4.8,
+            "raw_predicted_rating": 4.8,
+        },
     ]
 
 

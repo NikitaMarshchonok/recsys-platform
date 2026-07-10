@@ -147,6 +147,23 @@ def select_top_movies(n: int, genre: str | None = None):
         ascending=[False, False],
     ).head(n)
 
+
+def clamp_model_rating(rating: float) -> float:
+    return round(max(0.0, min(5.0, float(rating))), 2)
+
+
+def build_recommendation(movie_id: int, title: str, genres: str, rating: float):
+    raw_rating = round(float(rating), 2)
+
+    return MovieRecommendation(
+        movie_id=int(movie_id),
+        title=title,
+        genres=genres,
+        predicted_rating=clamp_model_rating(raw_rating),
+        raw_predicted_rating=raw_rating,
+    )
+
+
 # Схема запроса — что принимаем
 class RecommendRequest(BaseModel):
     user_id: int
@@ -179,6 +196,7 @@ class MovieRecommendation(BaseModel):
     title: str
     genres: str
     predicted_rating: float
+    raw_predicted_rating: float
 
 
 class SimilarMovieResponse(BaseModel):
@@ -370,11 +388,11 @@ def recommend(request: RecommendRequest):
 
         top = select_top_movies(request.n_recommendations)
         result = [
-            MovieRecommendation(
-                movie_id=int(row["movieId"]),
+            build_recommendation(
+                movie_id=row["movieId"],
                 title=row["title"],
                 genres=row["genres"],
-                predicted_rating=round(float(row["avg_rating"]), 2),
+                rating=row["avg_rating"],
             )
             for _, row in top.iterrows()
         ]
@@ -404,11 +422,11 @@ def recommend(request: RecommendRequest):
         for rec in recs_list:
             movie_id = rec["movieId"]
             movie_info = movie_catalog[movie_catalog["movieId"] == movie_id].iloc[0]
-            result.append(MovieRecommendation(
+            result.append(build_recommendation(
                 movie_id=movie_id,
                 title=movie_info["title"],
                 genres=movie_info["genres"],
-                predicted_rating=round(float(rec["rating"]), 2),
+                rating=rec["rating"],
             ))
 
     # Считаем время и пишем в базу

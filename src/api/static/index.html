@@ -637,6 +637,11 @@
       return String(value).replace(/[&<>"']/g, (char) => escapeMap[char]);
     }
 
+    function formatRating(value) {
+      const rating = Number(value);
+      return Number.isFinite(rating) ? rating.toFixed(2) : "0.00";
+    }
+
     function movieCard(movie) {
       const title = escapeHtml(movie.title);
       const genres = escapeHtml(movie.genres);
@@ -670,13 +675,19 @@
     function recommendationCard(movie) {
       const title = escapeHtml(movie.title);
       const genres = escapeHtml(movie.genres);
+      const predictedRating = formatRating(movie.predicted_rating);
+      const rawRating = Number(movie.raw_predicted_rating ?? movie.predicted_rating);
+      const rawRatingPill = Math.abs(rawRating - Number(movie.predicted_rating)) >= 0.01
+        ? `<span class="pill">raw ${formatRating(rawRating)}</span>`
+        : "";
 
       return `
         <article class="movie">
           <h3>${title}</h3>
           <div class="meta">
             <span class="pill">${genres}</span>
-            <span class="pill">predicted ${movie.predicted_rating}</span>
+            <span class="pill">predicted ${predictedRating}/5</span>
+            ${rawRatingPill}
             <span class="pill">#${movie.movie_id}</span>
           </div>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
