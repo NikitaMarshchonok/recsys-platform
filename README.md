@@ -97,6 +97,9 @@ Train the ALS model:
 MLFLOW_TRACKING_URI=file:./mlruns python src/training/train.py
 ```
 
+Training writes the Spark model and a compact `models/als_model/model_card.json`
+with RMSE, data split sizes, hyperparameters, and score policy.
+
 Start the API:
 
 ```bash
@@ -172,6 +175,7 @@ Request personalized recommendations:
 | GET | `/version` | Service name and API version |
 | GET | `/ready` | Readiness check for model and data artifacts |
 | GET | `/metrics` | Lightweight runtime cache metrics |
+| GET | `/model/info` | Model card summary with RMSE, data volume, score policy, and artifact size |
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Top-rated movies fallback ranking, optionally filtered by genre |
@@ -215,6 +219,12 @@ Catalog summary:
 
 ```bash
 curl "http://localhost:8001/catalog/summary"
+```
+
+Model card summary:
+
+```bash
+curl "http://localhost:8001/model/info"
 ```
 
 Movie detail:

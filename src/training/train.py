@@ -4,6 +4,8 @@ from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.sql.functions import col
+from datetime import datetime, timezone
+import json
 import os
 
 
@@ -33,12 +35,15 @@ ratings = spark.read \
 
 # Берём 20% данных для обучения на локальной машине
 ratings = ratings.sample(fraction=0.2, seed=42)
-print(f"После sampling: {ratings.count()} записей")
+sampled_count = ratings.count()
+print(f"После sampling: {sampled_count} записей")
 # Делим 80% train / 20% test
 train, test = ratings.randomSplit([0.8, 0.2], seed=42)
 
-print(f"Train: {train.count()} записей")
-print(f"Test: {test.count()} записей")
+train_count = train.count()
+test_count = test.count()
+print(f"Train: {train_count} записей")
+print(f"Test: {test_count} записей")
 
 # Параметры модели
 rank = 10        # размерность скрытых факторов
@@ -85,7 +90,42 @@ with mlflow.start_run():
     model_path = "models/als_model"
     os.makedirs("models", exist_ok=True)
     model.write().overwrite().save(model_path)
+
+    model_card = {
+        "model_name": "MovieLens ALS recommender",
+        "algorithm": "pyspark.ml.recommendation.ALS",
+        "dataset": "MovieLens ratings",
+        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "generated_by": "src/training/train.py",
+        "rating_scale": {"min": 0.0, "max": 5.0},
+        "score_policy": {
+            "predicted_rating": "clipped to the user-facing 0-5 rating scale",
+            "raw_predicted_rating": "unbounded ALS model output",
+        },
+        "training": {
+            "sample_fraction": 0.2,
+            "seed": 42,
+            "train_split": 0.8,
+            "test_split": 0.2,
+            "sampled_ratings": sampled_count,
+            "train_ratings": train_count,
+            "test_ratings": test_count,
+        },
+        "hyperparameters": {
+            "rank": rank,
+            "max_iter": max_iter,
+            "reg_param": reg_param,
+            "cold_start_strategy": "drop",
+        },
+        "metrics": {
+            "rmse": round(float(rmse), 4),
+        },
+    }
+    with open(os.path.join(model_path, "model_card.json"), "w", encoding="utf-8") as file:
+        json.dump(model_card, file, indent=2)
+
     print(f"Модель сохранена в {model_path}")
+    print(f"Model card сохранён в {model_path}/model_card.json")
 
 spark.stop()
 print("Готово!")

@@ -7,6 +7,7 @@ from pathlib import Path
 class Settings:
     base_dir: Path
     model_path: Path
+    model_card_path: Path
     movies_path: Path
     ratings_path: Path
     users_path: Path
@@ -25,6 +26,9 @@ def get_settings() -> Settings:
     return Settings(
         base_dir=base_dir,
         model_path=Path(os.getenv("RECSYS_MODEL_PATH", base_dir / "models" / "als_model")),
+        model_card_path=Path(
+            os.getenv("RECSYS_MODEL_CARD_PATH", base_dir / "models" / "als_model" / "model_card.json")
+        ),
         movies_path=Path(os.getenv("RECSYS_MOVIES_PATH", base_dir / "data" / "raw" / "movies.csv")),
         ratings_path=Path(os.getenv("RECSYS_RATINGS_PATH", base_dir / "data" / "raw" / "ratings.csv")),
         users_path=Path(os.getenv("RECSYS_USERS_PATH", base_dir / "data" / "raw" / "users.csv")),

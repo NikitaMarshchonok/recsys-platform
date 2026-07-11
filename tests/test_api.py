@@ -105,6 +105,8 @@ def test_web_app_response():
     assert response.headers["content-type"].startswith("text/html")
     assert "RecSys Demo" in response.text
     assert "Recommendations" in response.text
+    assert "Model Status" in response.text
+    assert "model-info" in response.text
     assert "Movie Detail" in response.text
     assert "User Context" in response.text
     assert "Similar Movies" in response.text
@@ -169,6 +171,23 @@ def test_metrics(monkeypatch):
         "cached_movies": 3,
         "cached_users": 2,
     }
+
+
+def test_model_info_response():
+    response = client.get("/model/info")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["model_name"] == "MovieLens ALS recommender"
+    assert data["algorithm"] == "pyspark.ml.recommendation.ALS"
+    assert data["model_exists"] is True
+    assert data["model_card_available"] is True
+    assert data["rmse"] == 0.8608
+    assert data["train_ratings"] == 3202980
+    assert data["rating_scale_min"] == 0.0
+    assert data["rating_scale_max"] == 5.0
+    assert data["model_size_mb"] > 0
+    assert "raw_predicted_rating" in data["score_policy"]
 
 
 def test_catalog_summary(monkeypatch):

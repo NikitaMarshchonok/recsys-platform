@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
+import json
 import logging
 import pandas as pd
 import time
@@ -132,6 +133,23 @@ def load_valid_user_ids():
         valid_user_ids = set(users["userId"].astype(int))
 
     return valid_user_ids
+
+
+def directory_size_bytes(path):
+    if not path.exists():
+        return 0
+    if path.is_file():
+        return path.stat().st_size
+
+    return sum(file.stat().st_size for file in path.rglob("*") if file.is_file())
+
+
+def load_model_card():
+    if not settings.model_card_path.exists():
+        return {}
+
+    with settings.model_card_path.open(encoding="utf-8") as file:
+        return json.load(file)
 
 
 def select_top_movies(n: int, genre: str | None = None):
@@ -275,6 +293,22 @@ class MetricsResponse(BaseModel):
     cached_users: int
 
 
+class ModelInfoResponse(BaseModel):
+    model_name: str
+    algorithm: str
+    dataset: str
+    model_exists: bool
+    model_card_available: bool
+    model_size_mb: float
+    rmse: float | None
+    sample_fraction: float | None
+    train_ratings: int | None
+    test_ratings: int | None
+    rating_scale_min: float
+    rating_scale_max: float
+    score_policy: str
+
+
 class CatalogSummaryResponse(BaseModel):
     total_movies: int
     total_genres: int
@@ -311,6 +345,7 @@ def version():
 def readiness():
     checks = {
         "model": settings.model_path.exists(),
+        "model_card": settings.model_card_path.exists(),
         "movies": settings.movies_path.exists(),
         "ratings": settings.ratings_path.exists(),
         "users": settings.users_path.exists(),
@@ -336,6 +371,36 @@ def metrics():
         "user_catalog_loaded": valid_user_ids is not None,
         "cached_movies": 0 if movies is None else len(movies),
         "cached_users": 0 if valid_user_ids is None else len(valid_user_ids),
+    }
+
+
+@app.get("/model/info", response_model=ModelInfoResponse)
+def model_info():
+    card = load_model_card()
+    training = card.get("training", {})
+    metrics = card.get("metrics", {})
+    rating_scale = card.get("rating_scale", {})
+    score_policy = card.get("score_policy", {})
+    raw_score_policy = score_policy.get("raw_predicted_rating", "unbounded model output")
+    predicted_score_policy = score_policy.get("predicted_rating", "user-facing score")
+
+    return {
+        "model_name": card.get("model_name", "ALS recommender"),
+        "algorithm": card.get("algorithm", "pyspark.ml.recommendation.ALS"),
+        "dataset": card.get("dataset", "unknown"),
+        "model_exists": settings.model_path.exists(),
+        "model_card_available": bool(card),
+        "model_size_mb": round(directory_size_bytes(settings.model_path) / 1024 / 1024, 2),
+        "rmse": metrics.get("rmse"),
+        "sample_fraction": training.get("sample_fraction"),
+        "train_ratings": training.get("train_ratings"),
+        "test_ratings": training.get("test_ratings"),
+        "rating_scale_min": rating_scale.get("min", 0.0),
+        "rating_scale_max": rating_scale.get("max", 5.0),
+        "score_policy": (
+            f"predicted_rating: {predicted_score_policy}; "
+            f"raw_predicted_rating: {raw_score_policy}"
+        ),
     }
 
 

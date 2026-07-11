@@ -1,0 +1,33 @@
+{
+  "model_name": "MovieLens ALS recommender",
+  "algorithm": "pyspark.ml.recommendation.ALS",
+  "dataset": "MovieLens ratings",
+  "trained_at": "2026-07-10T13:03:03+00:00",
+  "generated_by": "src/training/train.py",
+  "rating_scale": {
+    "min": 0.0,
+    "max": 5.0
+  },
+  "score_policy": {
+    "predicted_rating": "clipped to the user-facing 0-5 rating scale",
+    "raw_predicted_rating": "unbounded ALS model output"
+  },
+  "training": {
+    "sample_fraction": 0.2,
+    "seed": 42,
+    "train_split": 0.8,
+    "test_split": 0.2,
+    "sampled_ratings": 4002443,
+    "train_ratings": 3202980,
+    "test_ratings": 799463
+  },
+  "hyperparameters": {
+    "rank": 10,
+    "max_iter": 10,
+    "reg_param": 0.1,
+    "cold_start_strategy": "drop"
+  },
+  "metrics": {
+    "rmse": 0.8608
+  }
+}
