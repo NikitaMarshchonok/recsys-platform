@@ -170,7 +170,29 @@ def clamp_model_rating(rating: float) -> float:
     return round(max(0.0, min(5.0, float(rating))), 2)
 
 
-def build_recommendation(movie_id: int, title: str, genres: str, rating: float):
+def primary_genre(genres: str) -> str:
+    genre = str(genres).split(",")[0].strip()
+    return genre or "Unknown"
+
+
+def recommendation_reason(genres: str, source: str) -> str:
+    genre = primary_genre(genres)
+    if source == "fallback_top":
+        return f"Cold-start fallback from top-rated catalog; primary genre: {genre}."
+
+    return (
+        "ALS collaborative filtering match from similar-user rating patterns; "
+        f"primary genre: {genre}."
+    )
+
+
+def build_recommendation(
+    movie_id: int,
+    title: str,
+    genres: str,
+    rating: float,
+    source: str = "als",
+):
     raw_rating = round(float(rating), 2)
 
     return MovieRecommendation(
@@ -179,6 +201,7 @@ def build_recommendation(movie_id: int, title: str, genres: str, rating: float):
         genres=genres,
         predicted_rating=clamp_model_rating(raw_rating),
         raw_predicted_rating=raw_rating,
+        reason=recommendation_reason(genres, source),
     )
 
 
@@ -215,6 +238,7 @@ class MovieRecommendation(BaseModel):
     genres: str
     predicted_rating: float
     raw_predicted_rating: float
+    reason: str
 
 
 class SimilarMovieResponse(BaseModel):
@@ -458,6 +482,7 @@ def recommend(request: RecommendRequest):
                 title=row["title"],
                 genres=row["genres"],
                 rating=row["avg_rating"],
+                source="fallback_top",
             )
             for _, row in top.iterrows()
         ]

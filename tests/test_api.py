@@ -123,6 +123,7 @@ def test_web_app_response():
     assert 'aria-pressed="true">User 1' in response.text
     assert "escapeHtml" in response.text
     assert "raw_predicted_rating" in response.text
+    assert "Why:" in response.text
     assert 'class="sidebar"' in response.text
     assert "position: sticky" in response.text
 
@@ -256,6 +257,10 @@ def test_recommend_valid_user():
     assert "predicted_rating" in data[0]
     assert data[0]["predicted_rating"] == 5.0
     assert data[0]["raw_predicted_rating"] == 5.94
+    assert data[0]["reason"] == (
+        "ALS collaborative filtering match from similar-user rating patterns; "
+        "primary genre: Drama."
+    )
 
 
 def test_recommend_openapi_example_uses_valid_user():
@@ -293,6 +298,7 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
             "genres": "Comedy",
             "predicted_rating": 4.8,
             "raw_predicted_rating": 4.8,
+            "reason": "Cold-start fallback from top-rated catalog; primary genre: Comedy.",
         },
         {
             "movie_id": 2,
@@ -300,6 +306,7 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
             "genres": "Action",
             "predicted_rating": 4.8,
             "raw_predicted_rating": 4.8,
+            "reason": "Cold-start fallback from top-rated catalog; primary genre: Action.",
         },
     ]
 

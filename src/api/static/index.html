@@ -683,6 +683,7 @@
     function recommendationCard(movie) {
       const title = escapeHtml(movie.title);
       const genres = escapeHtml(movie.genres);
+      const reason = escapeHtml(movie.reason || "Recommended by the current ranking policy.");
       const predictedRating = formatRating(movie.predicted_rating);
       const rawRating = Number(movie.raw_predicted_rating ?? movie.predicted_rating);
       const rawRatingPill = Math.abs(rawRating - Number(movie.predicted_rating)) >= 0.01
@@ -698,6 +699,7 @@
             ${rawRatingPill}
             <span class="pill">#${movie.movie_id}</span>
           </div>
+          <p class="side-meta" style="margin-top: 8px;">Why: ${reason}</p>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
       `;
