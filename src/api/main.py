@@ -5,6 +5,7 @@ import json
 import logging
 import pandas as pd
 import time
+from typing import Literal
 import uuid
 
 from src.api.config import get_settings
@@ -205,6 +206,48 @@ def build_recommendation(
     )
 
 
+def record_recommendation_feedback(feedback):
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS recommendation_feedback (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL,
+                        movie_id INTEGER NOT NULL,
+                        feedback VARCHAR(16) NOT NULL,
+                        source VARCHAR(50) NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cur.execute(
+                    """
+                    INSERT INTO recommendation_feedback
+                        (user_id, movie_id, feedback, source)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        feedback.user_id,
+                        feedback.movie_id,
+                        feedback.feedback,
+                        feedback.source,
+                    ),
+                )
+        conn.close()
+        return "postgres"
+    except Exception as exc:
+        logger.info(
+            "recommendation_feedback_log_only user_id=%s movie_id=%s feedback=%s source=%s error=%s",
+            feedback.user_id,
+            feedback.movie_id,
+            feedback.feedback,
+            feedback.source,
+            exc,
+        )
+        return "log_only"
+
+
 # Схема запроса — что принимаем
 class RecommendRequest(BaseModel):
     user_id: int
@@ -231,6 +274,14 @@ class RecommendRequest(BaseModel):
         }
     }
 
+
+class RecommendationFeedbackRequest(BaseModel):
+    user_id: int = Field(ge=1)
+    movie_id: int = Field(ge=1)
+    feedback: Literal["like", "dislike"]
+    source: str = Field(default="web_app", min_length=1, max_length=50)
+
+
 # Схема ответа — что возвращаем
 class MovieRecommendation(BaseModel):
     movie_id: int
@@ -239,6 +290,14 @@ class MovieRecommendation(BaseModel):
     predicted_rating: float
     raw_predicted_rating: float
     reason: str
+
+
+class RecommendationFeedbackResponse(BaseModel):
+    status: str
+    storage: str
+    user_id: int
+    movie_id: int
+    feedback: str
 
 
 class SimilarMovieResponse(BaseModel):
@@ -541,6 +600,19 @@ def recommend(request: RecommendRequest):
         # не ломаем API если логирование упало
 
     return result
+
+
+@app.post("/recommend/feedback", response_model=RecommendationFeedbackResponse)
+def recommendation_feedback(feedback: RecommendationFeedbackRequest):
+    storage = record_recommendation_feedback(feedback)
+
+    return {
+        "status": "accepted",
+        "storage": storage,
+        "user_id": feedback.user_id,
+        "movie_id": feedback.movie_id,
+        "feedback": feedback.feedback,
+    }
 
 
 @app.get("/similar_movies/{movie_id}", response_model=list[SimilarMovieResponse])

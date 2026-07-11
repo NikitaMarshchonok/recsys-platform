@@ -700,6 +700,10 @@
             <span class="pill">#${movie.movie_id}</span>
           </div>
           <p class="side-meta" style="margin-top: 8px;">Why: ${reason}</p>
+          <div class="meta" style="margin-top: 8px;">
+            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="like">Like</button>
+            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="dislike">Dislike</button>
+          </div>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
       `;
@@ -859,6 +863,22 @@
         setRecommendationStatus(error.message, true);
       } finally {
         recommendationButton.disabled = false;
+      }
+    }
+
+    async function sendRecommendationFeedback(movieId, feedback) {
+      try {
+        const result = await postJson("/recommend/feedback", {
+          user_id: Number(recommendationUserIdInput.value || 1),
+          movie_id: Number(movieId),
+          feedback,
+          source: "web_app",
+        });
+        setRecommendationStatus(
+          `Feedback accepted for movie ${result.movie_id}: ${result.feedback}.`
+        );
+      } catch (error) {
+        setRecommendationStatus(error.message, true);
       }
     }
 
@@ -1029,6 +1049,15 @@
         contextUserIdInput.value = userId;
         recommendationUserIdInput.value = userId;
         loadUserContext();
+        return;
+      }
+
+      const feedbackButton = event.target.closest("[data-feedback-movie-id]");
+      if (feedbackButton) {
+        sendRecommendationFeedback(
+          feedbackButton.dataset.feedbackMovieId,
+          feedbackButton.dataset.feedbackValue,
+        );
         return;
       }
 

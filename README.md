@@ -184,6 +184,7 @@ Request personalized recommendations:
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
 | POST | `/recommend` | Personalized movie recommendations |
+| POST | `/recommend/feedback` | Capture like/dislike feedback for recommendation quality loops |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
 | GET | `/stats` | Request statistics from PostgreSQL |
 
@@ -201,6 +202,14 @@ Cold-start fallback for an unknown user:
 curl -X POST "http://localhost:8001/recommend" \
   -H "Content-Type: application/json" \
   -d '{"user_id": 9999, "n_recommendations": 5, "fallback_to_top": true}'
+```
+
+Recommendation feedback:
+
+```bash
+curl -X POST "http://localhost:8001/recommend/feedback" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": 1, "movie_id": 1, "feedback": "like", "source": "web_app"}'
 ```
 
 Readiness check:

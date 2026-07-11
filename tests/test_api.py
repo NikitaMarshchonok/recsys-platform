@@ -39,14 +39,21 @@ class FakeCursor:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def execute(self, query):
+    def execute(self, query, params=None):
         self.query = query
+        self.params = params
 
     def fetchone(self):
         return (12, 42.4, 10.1, 88.9)
 
 
 class FakeConnection:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
     def cursor(self):
         return FakeCursor()
 
@@ -124,6 +131,10 @@ def test_web_app_response():
     assert "escapeHtml" in response.text
     assert "raw_predicted_rating" in response.text
     assert "Why:" in response.text
+    assert "/recommend/feedback" in response.text
+    assert "data-feedback-movie-id" in response.text
+    assert "Like" in response.text
+    assert "Dislike" in response.text
     assert 'class="sidebar"' in response.text
     assert "position: sticky" in response.text
 
@@ -271,6 +282,29 @@ def test_recommend_openapi_example_uses_valid_user():
         "user_id": 1,
         "n_recommendations": 5,
         "fallback_to_top": False,
+    }
+
+
+def test_recommendation_feedback_response(monkeypatch):
+    monkeypatch.setattr(api_module, "get_db_connection", lambda: FakeConnection())
+
+    response = client.post(
+        "/recommend/feedback",
+        json={
+            "user_id": 1,
+            "movie_id": 2,
+            "feedback": "like",
+            "source": "test",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "accepted",
+        "storage": "postgres",
+        "user_id": 1,
+        "movie_id": 2,
+        "feedback": "like",
     }
 
 
