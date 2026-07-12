@@ -61,6 +61,16 @@ class FakeConnection:
         pass
 
 
+class FakeFeedbackSummaryCursor(FakeCursor):
+    def fetchone(self):
+        return (8, 6, 2)
+
+
+class FakeFeedbackSummaryConnection(FakeConnection):
+    def cursor(self):
+        return FakeFeedbackSummaryCursor()
+
+
 @pytest.fixture(autouse=True)
 def mock_api_resources(monkeypatch):
     movies = pd.DataFrame({
@@ -135,6 +145,9 @@ def test_web_app_response():
     assert "data-feedback-movie-id" in response.text
     assert "Like" in response.text
     assert "Dislike" in response.text
+    assert "Feedback Signals" in response.text
+    assert "feedback-summary" in response.text
+    assert "/recommend/feedback/summary" in response.text
     assert 'class="sidebar"' in response.text
     assert "position: sticky" in response.text
 
@@ -305,6 +318,43 @@ def test_recommendation_feedback_response(monkeypatch):
         "user_id": 1,
         "movie_id": 2,
         "feedback": "like",
+    }
+
+
+def test_recommendation_feedback_summary(monkeypatch):
+    monkeypatch.setattr(
+        api_module,
+        "get_db_connection",
+        lambda: FakeFeedbackSummaryConnection(),
+    )
+
+    response = client.get("/recommend/feedback/summary")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_feedback": 8,
+        "likes": 6,
+        "dislikes": 2,
+        "like_rate": 75.0,
+        "storage": "postgres",
+    }
+
+
+def test_recommendation_feedback_summary_when_database_is_unavailable(monkeypatch):
+    def unavailable_connection():
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(api_module, "get_db_connection", unavailable_connection)
+
+    response = client.get("/recommend/feedback/summary")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_feedback": 0,
+        "likes": 0,
+        "dislikes": 0,
+        "like_rate": 0.0,
+        "storage": "unavailable",
     }
 
 

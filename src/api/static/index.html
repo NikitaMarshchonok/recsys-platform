@@ -504,6 +504,14 @@
           <div id="model-info" class="summary"></div>
         </section>
 
+        <section aria-labelledby="feedback-summary-title" style="margin-top: 16px;">
+          <div class="section-head">
+            <h2 id="feedback-summary-title">Feedback Signals</h2>
+          </div>
+          <div id="feedback-summary" class="summary"></div>
+          <p id="feedback-summary-status" class="status">Loading feedback metrics...</p>
+        </section>
+
         <section aria-labelledby="movie-detail-title" style="margin-top: 16px;">
           <div class="section-head">
             <h2 id="movie-detail-title">Movie Detail</h2>
@@ -562,6 +570,8 @@
     const resultsEl = document.querySelector("#results");
     const summaryEl = document.querySelector("#summary");
     const modelInfoEl = document.querySelector("#model-info");
+    const feedbackSummaryEl = document.querySelector("#feedback-summary");
+    const feedbackSummaryStatusEl = document.querySelector("#feedback-summary-status");
     const topMoviesEl = document.querySelector("#top-movies");
     const movieDetailForm = document.querySelector("#movie-detail-form");
     const detailMovieIdInput = document.querySelector("#detail-movie-id");
@@ -877,6 +887,7 @@
         setRecommendationStatus(
           `Feedback accepted for movie ${result.movie_id}: ${result.feedback}.`
         );
+        await loadFeedbackSummary();
       } catch (error) {
         setRecommendationStatus(error.message, true);
       }
@@ -923,6 +934,28 @@
         <div class="metric"><span>Train ratings</span><strong>${trainRatings}</strong></div>
         <div class="metric"><span>Model size</span><strong>${info.model_size_mb} MB</strong></div>
       `;
+    }
+
+    function renderFeedbackSummary(summary) {
+      feedbackSummaryEl.innerHTML = `
+        <div class="metric"><span>Signals</span><strong>${summary.total_feedback}</strong></div>
+        <div class="metric"><span>Likes</span><strong>${summary.likes}</strong></div>
+        <div class="metric"><span>Dislikes</span><strong>${summary.dislikes}</strong></div>
+        <div class="metric"><span>Like rate</span><strong>${summary.like_rate}%</strong></div>
+      `;
+      feedbackSummaryStatusEl.textContent = summary.storage === "postgres"
+        ? "Live metrics from PostgreSQL."
+        : "PostgreSQL unavailable; feedback is logged only.";
+    }
+
+    async function loadFeedbackSummary() {
+      try {
+        const summary = await getJson("/recommend/feedback/summary");
+        renderFeedbackSummary(summary);
+      } catch (error) {
+        feedbackSummaryEl.innerHTML = "";
+        feedbackSummaryStatusEl.textContent = "Feedback metrics are temporarily unavailable.";
+      }
     }
 
     function renderTopMovies(movies) {
@@ -989,14 +1022,16 @@
 
     async function boot() {
       try {
-        const [summary, topMovies, modelInfo] = await Promise.all([
+        const [summary, topMovies, modelInfo, feedbackSummary] = await Promise.all([
           getJson("/catalog/summary"),
           getJson("/movies/top?n=5"),
           getJson("/model/info"),
+          getJson("/recommend/feedback/summary"),
           loadGenres(),
         ]);
         renderSummary(summary);
         renderModelInfo(modelInfo);
+        renderFeedbackSummary(feedbackSummary);
         renderTopMovies(topMovies);
         await searchMovies();
       } catch (error) {

@@ -185,6 +185,7 @@ Request personalized recommendations:
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
 | POST | `/recommend` | Personalized movie recommendations |
 | POST | `/recommend/feedback` | Capture like/dislike feedback for recommendation quality loops |
+| GET | `/recommend/feedback/summary` | Aggregate recommendation feedback and like rate |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
 | GET | `/stats` | Request statistics from PostgreSQL |
 
@@ -210,6 +211,12 @@ Recommendation feedback:
 curl -X POST "http://localhost:8001/recommend/feedback" \
   -H "Content-Type: application/json" \
   -d '{"user_id": 1, "movie_id": 1, "feedback": "like", "source": "web_app"}'
+```
+
+Feedback summary:
+
+```bash
+curl "http://localhost:8001/recommend/feedback/summary"
 ```
 
 Readiness check:

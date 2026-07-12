@@ -206,21 +206,25 @@ def build_recommendation(
     )
 
 
+def ensure_recommendation_feedback_table(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS recommendation_feedback (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            movie_id INTEGER NOT NULL,
+            feedback VARCHAR(16) NOT NULL,
+            source VARCHAR(50) NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+
 def record_recommendation_feedback(feedback):
     try:
         conn = get_db_connection()
         with conn:
             with conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS recommendation_feedback (
-                        id SERIAL PRIMARY KEY,
-                        user_id INTEGER NOT NULL,
-                        movie_id INTEGER NOT NULL,
-                        feedback VARCHAR(16) NOT NULL,
-                        source VARCHAR(50) NOT NULL,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
+                ensure_recommendation_feedback_table(cur)
                 cur.execute(
                     """
                     INSERT INTO recommendation_feedback
@@ -246,6 +250,45 @@ def record_recommendation_feedback(feedback):
             exc,
         )
         return "log_only"
+
+
+def summarize_recommendation_feedback():
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                ensure_recommendation_feedback_table(cur)
+                cur.execute("""
+                    SELECT
+                        COUNT(*),
+                        COUNT(*) FILTER (WHERE feedback = 'like'),
+                        COUNT(*) FILTER (WHERE feedback = 'dislike')
+                    FROM recommendation_feedback
+                """)
+                total_feedback, likes, dislikes = cur.fetchone()
+        conn.close()
+    except Exception as exc:
+        logger.info("recommendation_feedback_summary_unavailable error=%s", exc)
+        return {
+            "total_feedback": 0,
+            "likes": 0,
+            "dislikes": 0,
+            "like_rate": 0.0,
+            "storage": "unavailable",
+        }
+
+    total_feedback = int(total_feedback or 0)
+    likes = int(likes or 0)
+    dislikes = int(dislikes or 0)
+    like_rate = round(likes / total_feedback * 100, 1) if total_feedback else 0.0
+
+    return {
+        "total_feedback": total_feedback,
+        "likes": likes,
+        "dislikes": dislikes,
+        "like_rate": like_rate,
+        "storage": "postgres",
+    }
 
 
 # Схема запроса — что принимаем
@@ -298,6 +341,14 @@ class RecommendationFeedbackResponse(BaseModel):
     user_id: int
     movie_id: int
     feedback: str
+
+
+class RecommendationFeedbackSummaryResponse(BaseModel):
+    total_feedback: int
+    likes: int
+    dislikes: int
+    like_rate: float
+    storage: Literal["postgres", "unavailable"]
 
 
 class SimilarMovieResponse(BaseModel):
@@ -613,6 +664,14 @@ def recommendation_feedback(feedback: RecommendationFeedbackRequest):
         "movie_id": feedback.movie_id,
         "feedback": feedback.feedback,
     }
+
+
+@app.get(
+    "/recommend/feedback/summary",
+    response_model=RecommendationFeedbackSummaryResponse,
+)
+def recommendation_feedback_summary():
+    return summarize_recommendation_feedback()
 
 
 @app.get("/similar_movies/{movie_id}", response_model=list[SimilarMovieResponse])
