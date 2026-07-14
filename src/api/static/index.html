@@ -111,7 +111,7 @@
     }
 
     .recommendation-controls {
-      grid-template-columns: 140px 120px minmax(180px, 1fr) 150px;
+      grid-template-columns: 120px 92px minmax(140px, 1fr) minmax(150px, 1fr) 130px;
     }
 
     .user-controls {
@@ -457,6 +457,10 @@
               <input id="recommend-limit" name="n_recommendations" type="number" min="1" max="50" value="5">
             </label>
             <label class="checkbox-label">
+              <input id="recommend-diversify" name="diversify" type="checkbox" checked>
+              Diversify genres
+            </label>
+            <label class="checkbox-label">
               <input id="recommend-fallback" name="fallback_to_top" type="checkbox">
               Use top movies fallback
             </label>
@@ -581,6 +585,7 @@
     const recommendationForm = document.querySelector("#recommendation-form");
     const recommendationUserIdInput = document.querySelector("#recommend-user-id");
     const recommendationLimitInput = document.querySelector("#recommend-limit");
+    const recommendationDiversifyInput = document.querySelector("#recommend-diversify");
     const recommendationFallbackInput = document.querySelector("#recommend-fallback");
     const recommendationButton = document.querySelector("#recommend-button");
     const recommendationStatusEl = document.querySelector("#recommendation-status");
@@ -719,7 +724,7 @@
       `;
     }
 
-    function renderRecommendations(movies) {
+    function renderRecommendations(movies, diversified = false) {
       if (movies.length === 0) {
         recommendationsEl.innerHTML = "";
         setRecommendationStatus("No recommendations returned.");
@@ -727,7 +732,8 @@
       }
 
       recommendationsEl.innerHTML = movies.map(recommendationCard).join("");
-      setRecommendationStatus(`${movies.length} recommendations returned.`);
+      const rankingLabel = diversified ? " with genre diversity" : "";
+      setRecommendationStatus(`${movies.length} recommendations returned${rankingLabel}.`);
     }
 
     function similarMovieCard(movie) {
@@ -867,8 +873,9 @@
           user_id: Number(recommendationUserIdInput.value || 1),
           n_recommendations: Number(recommendationLimitInput.value || 5),
           fallback_to_top: recommendationFallbackInput.checked,
+          diversify: recommendationDiversifyInput.checked,
         });
-        renderRecommendations(movies);
+        renderRecommendations(movies, recommendationDiversifyInput.checked);
       } catch (error) {
         setRecommendationStatus(error.message, true);
       } finally {

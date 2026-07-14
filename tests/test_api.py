@@ -282,7 +282,7 @@ def test_recommend_valid_user():
     assert data[0]["predicted_rating"] == 5.0
     assert data[0]["raw_predicted_rating"] == 5.94
     assert data[0]["reason"] == (
-        "ALS collaborative filtering match from similar-user rating patterns; "
+        "ALS collaborative filtering match with genre-diversity re-ranking; "
         "primary genre: Drama."
     )
 
@@ -295,7 +295,37 @@ def test_recommend_openapi_example_uses_valid_user():
         "user_id": 1,
         "n_recommendations": 5,
         "fallback_to_top": False,
+        "diversify": True,
     }
+
+
+def test_recommendation_diversity_reranks_repeated_genres(monkeypatch):
+    movies = pd.DataFrame({
+        "movieId": [1, 2, 3, 4, 5],
+        "title": ["Drama A", "Drama B", "Action A", "Comedy A", "Sci-Fi A"],
+        "genres": ["Drama", "Drama", "Action", "Comedy", "Sci-Fi"],
+    })
+    monkeypatch.setattr(
+        api_module,
+        "load_recommendation_resources",
+        lambda: (FakeSpark(), FakeModel(), movies, {1}),
+    )
+
+    diversified = client.post(
+        "/recommend",
+        json={"user_id": 1, "n_recommendations": 3, "diversify": True},
+    )
+    pure_als = client.post(
+        "/recommend",
+        json={"user_id": 1, "n_recommendations": 3, "diversify": False},
+    )
+
+    assert diversified.status_code == 200
+    assert [movie["movie_id"] for movie in diversified.json()] == [1, 3, 4]
+    assert "genre-diversity re-ranking" in diversified.json()[0]["reason"]
+    assert pure_als.status_code == 200
+    assert [movie["movie_id"] for movie in pure_als.json()] == [1, 2, 3]
+    assert "similar-user rating patterns" in pure_als.json()[0]["reason"]
 
 
 def test_recommendation_feedback_response(monkeypatch):

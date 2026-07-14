@@ -161,7 +161,8 @@ Request personalized recommendations:
 {
   "user_id": 1,
   "n_recommendations": 5,
-  "fallback_to_top": false
+  "fallback_to_top": false,
+  "diversify": true
 }
 ```
 
@@ -183,7 +184,7 @@ Request personalized recommendations:
 | GET | `/movies/{movie_id}` | Movie catalog detail for recommendation debugging |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
-| POST | `/recommend` | Personalized movie recommendations |
+| POST | `/recommend` | Personalized recommendations with optional genre-diversity re-ranking |
 | POST | `/recommend/feedback` | Capture like/dislike feedback for recommendation quality loops |
 | GET | `/recommend/feedback/summary` | Aggregate recommendation feedback and like rate |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
@@ -194,7 +195,7 @@ Example recommendation request:
 ```bash
 curl -X POST "http://localhost:8001/recommend" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": 1, "n_recommendations": 5, "fallback_to_top": false}'
+  -d '{"user_id": 1, "n_recommendations": 5, "fallback_to_top": false, "diversify": true}'
 ```
 
 Cold-start fallback for an unknown user:

@@ -180,11 +180,37 @@ def recommendation_reason(genres: str, source: str) -> str:
     genre = primary_genre(genres)
     if source == "fallback_top":
         return f"Cold-start fallback from top-rated catalog; primary genre: {genre}."
+    if source == "als_diverse":
+        return (
+            "ALS collaborative filtering match with genre-diversity re-ranking; "
+            f"primary genre: {genre}."
+        )
 
     return (
         "ALS collaborative filtering match from similar-user rating patterns; "
         f"primary genre: {genre}."
     )
+
+
+def rerank_for_genre_diversity(candidates: list[dict], n: int) -> list[dict]:
+    selected = []
+    deferred = []
+    selected_genres = set()
+
+    for candidate in candidates:
+        genre = primary_genre(candidate["genres"]).lower()
+        if genre not in selected_genres and len(selected) < n:
+            selected.append(candidate)
+            selected_genres.add(genre)
+        else:
+            deferred.append(candidate)
+
+    for candidate in deferred:
+        if len(selected) >= n:
+            break
+        selected.append(candidate)
+
+    return selected[:n]
 
 
 def build_recommendation(
@@ -304,6 +330,10 @@ class RecommendRequest(BaseModel):
         default=False,
         description="Вернуть top-rated fallback для неизвестного пользователя",
     )
+    diversify: bool = Field(
+        default=True,
+        description="Переранжировать кандидатов для разнообразия основных жанров",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -312,6 +342,7 @@ class RecommendRequest(BaseModel):
                     "user_id": 1,
                     "n_recommendations": 5,
                     "fallback_to_top": False,
+                    "diversify": True,
                 }
             ]
         }
@@ -577,6 +608,11 @@ def recommend(request: RecommendRequest):
 
     init_db()
     users = load_valid_user_ids()
+    candidate_count = (
+        min(request.n_recommendations * 3, 150)
+        if request.diversify
+        else request.n_recommendations
+    )
 
     if request.user_id not in users:
         if not request.fallback_to_top:
@@ -585,17 +621,17 @@ def recommend(request: RecommendRequest):
                 detail=f"Пользователь {request.user_id} не найден"
             )
 
-        top = select_top_movies(request.n_recommendations)
-        result = [
-            build_recommendation(
-                movie_id=row["movieId"],
-                title=row["title"],
-                genres=row["genres"],
-                rating=row["avg_rating"],
-                source="fallback_top",
-            )
+        top = select_top_movies(candidate_count)
+        candidates = [
+            {
+                "movie_id": int(row["movieId"]),
+                "title": row["title"],
+                "genres": row["genres"],
+                "rating": row["avg_rating"],
+            }
             for _, row in top.iterrows()
         ]
+        source = "fallback_top"
     else:
         spark_session, als_model, movie_catalog, _ = load_recommendation_resources()
 
@@ -606,7 +642,7 @@ def recommend(request: RecommendRequest):
 
         recs = als_model.recommendForUserSubset(
             user_df,
-            request.n_recommendations
+            candidate_count,
         )
 
         rows = recs.collect()
@@ -618,16 +654,39 @@ def recommend(request: RecommendRequest):
 
         recs_list = rows[0]["recommendations"]
 
-        result = []
+        movie_lookup = movie_catalog.set_index("movieId")
+        candidates = []
         for rec in recs_list:
-            movie_id = rec["movieId"]
-            movie_info = movie_catalog[movie_catalog["movieId"] == movie_id].iloc[0]
-            result.append(build_recommendation(
-                movie_id=movie_id,
-                title=movie_info["title"],
-                genres=movie_info["genres"],
-                rating=rec["rating"],
-            ))
+            movie_id = int(rec["movieId"])
+            if movie_id not in movie_lookup.index:
+                continue
+            movie_info = movie_lookup.loc[movie_id]
+            candidates.append({
+                "movie_id": movie_id,
+                "title": movie_info["title"],
+                "genres": movie_info["genres"],
+                "rating": rec["rating"],
+            })
+        source = "als_diverse" if request.diversify else "als"
+
+    if request.diversify:
+        candidates = rerank_for_genre_diversity(
+            candidates,
+            request.n_recommendations,
+        )
+    else:
+        candidates = candidates[:request.n_recommendations]
+
+    result = [
+        build_recommendation(
+            movie_id=candidate["movie_id"],
+            title=candidate["title"],
+            genres=candidate["genres"],
+            rating=candidate["rating"],
+            source=source,
+        )
+        for candidate in candidates
+    ]
 
     # Считаем время и пишем в базу
     response_time = (time.time() - start_time) * 1000  # в миллисекундах
