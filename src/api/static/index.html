@@ -704,6 +704,15 @@
       const rawRatingPill = Math.abs(rawRating - Number(movie.predicted_rating)) >= 0.01
         ? `<span class="pill">raw ${formatRating(rawRating)}</span>`
         : "";
+      const strategyLabels = {
+        als: "ALS",
+        als_diverse: "ALS + diversity",
+        fallback_top: "Top fallback",
+        fallback_top_diverse: "Top fallback + diversity",
+      };
+      const strategy = escapeHtml(
+        strategyLabels[movie.ranking_strategy] || movie.ranking_strategy
+      );
 
       return `
         <article class="movie">
@@ -712,6 +721,7 @@
             <span class="pill">${genres}</span>
             <span class="pill">predicted ${predictedRating}/5</span>
             ${rawRatingPill}
+            <span class="pill">${strategy}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
           <p class="side-meta" style="margin-top: 8px;">Why: ${reason}</p>

@@ -281,6 +281,7 @@ def test_recommend_valid_user():
     assert "predicted_rating" in data[0]
     assert data[0]["predicted_rating"] == 5.0
     assert data[0]["raw_predicted_rating"] == 5.94
+    assert data[0]["ranking_strategy"] == "als_diverse"
     assert data[0]["reason"] == (
         "ALS collaborative filtering match with genre-diversity re-ranking; "
         "primary genre: Drama."
@@ -322,9 +323,11 @@ def test_recommendation_diversity_reranks_repeated_genres(monkeypatch):
 
     assert diversified.status_code == 200
     assert [movie["movie_id"] for movie in diversified.json()] == [1, 3, 4]
+    assert diversified.json()[0]["ranking_strategy"] == "als_diverse"
     assert "genre-diversity re-ranking" in diversified.json()[0]["reason"]
     assert pure_als.status_code == 200
     assert [movie["movie_id"] for movie in pure_als.json()] == [1, 2, 3]
+    assert pure_als.json()[0]["ranking_strategy"] == "als"
     assert "similar-user rating patterns" in pure_als.json()[0]["reason"]
 
 
@@ -412,7 +415,11 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
             "genres": "Comedy",
             "predicted_rating": 4.8,
             "raw_predicted_rating": 4.8,
-            "reason": "Cold-start fallback from top-rated catalog; primary genre: Comedy.",
+            "ranking_strategy": "fallback_top_diverse",
+            "reason": (
+                "Cold-start top-rated fallback with genre-diversity re-ranking; "
+                "primary genre: Comedy."
+            ),
         },
         {
             "movie_id": 2,
@@ -420,7 +427,11 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
             "genres": "Action",
             "predicted_rating": 4.8,
             "raw_predicted_rating": 4.8,
-            "reason": "Cold-start fallback from top-rated catalog; primary genre: Action.",
+            "ranking_strategy": "fallback_top_diverse",
+            "reason": (
+                "Cold-start top-rated fallback with genre-diversity re-ranking; "
+                "primary genre: Action."
+            ),
         },
     ]
 

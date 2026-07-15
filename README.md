@@ -166,6 +166,9 @@ Request personalized recommendations:
 }
 ```
 
+Each recommendation includes `ranking_strategy` so clients can distinguish pure ALS,
+diversity re-ranking, and cold-start fallback results.
+
 ## API Endpoints
 
 | Method | Endpoint | Description |

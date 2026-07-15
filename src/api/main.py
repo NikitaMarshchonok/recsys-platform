@@ -19,6 +19,13 @@ model = None
 movies = None
 valid_user_ids = None
 
+RankingStrategy = Literal[
+    "als",
+    "als_diverse",
+    "fallback_top",
+    "fallback_top_diverse",
+]
+
 # Создаём приложение
 app = FastAPI(
     title="RecSys API",
@@ -178,6 +185,11 @@ def primary_genre(genres: str) -> str:
 
 def recommendation_reason(genres: str, source: str) -> str:
     genre = primary_genre(genres)
+    if source == "fallback_top_diverse":
+        return (
+            "Cold-start top-rated fallback with genre-diversity re-ranking; "
+            f"primary genre: {genre}."
+        )
     if source == "fallback_top":
         return f"Cold-start fallback from top-rated catalog; primary genre: {genre}."
     if source == "als_diverse":
@@ -218,7 +230,7 @@ def build_recommendation(
     title: str,
     genres: str,
     rating: float,
-    source: str = "als",
+    source: RankingStrategy = "als",
 ):
     raw_rating = round(float(rating), 2)
 
@@ -228,6 +240,7 @@ def build_recommendation(
         genres=genres,
         predicted_rating=clamp_model_rating(raw_rating),
         raw_predicted_rating=raw_rating,
+        ranking_strategy=source,
         reason=recommendation_reason(genres, source),
     )
 
@@ -363,6 +376,7 @@ class MovieRecommendation(BaseModel):
     genres: str
     predicted_rating: float
     raw_predicted_rating: float
+    ranking_strategy: RankingStrategy
     reason: str
 
 
@@ -631,7 +645,7 @@ def recommend(request: RecommendRequest):
             }
             for _, row in top.iterrows()
         ]
-        source = "fallback_top"
+        source = "fallback_top_diverse" if request.diversify else "fallback_top"
     else:
         spark_session, als_model, movie_catalog, _ = load_recommendation_resources()
 
