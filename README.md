@@ -214,7 +214,7 @@ Recommendation feedback:
 ```bash
 curl -X POST "http://localhost:8001/recommend/feedback" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": 1, "movie_id": 1, "feedback": "like", "source": "web_app"}'
+  -d '{"user_id": 1, "movie_id": 1, "feedback": "like", "source": "web_app", "ranking_strategy": "als_diverse"}'
 ```
 
 Feedback summary:

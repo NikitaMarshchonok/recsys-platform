@@ -726,8 +726,8 @@
           </div>
           <p class="side-meta" style="margin-top: 8px;">Why: ${reason}</p>
           <div class="meta" style="margin-top: 8px;">
-            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="like">Like</button>
-            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="dislike">Dislike</button>
+            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="like" data-feedback-strategy="${movie.ranking_strategy}">Like</button>
+            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="dislike" data-feedback-strategy="${movie.ranking_strategy}">Dislike</button>
           </div>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
@@ -893,16 +893,17 @@
       }
     }
 
-    async function sendRecommendationFeedback(movieId, feedback) {
+    async function sendRecommendationFeedback(movieId, feedback, rankingStrategy) {
       try {
         const result = await postJson("/recommend/feedback", {
           user_id: Number(recommendationUserIdInput.value || 1),
           movie_id: Number(movieId),
           feedback,
           source: "web_app",
+          ranking_strategy: rankingStrategy,
         });
         setRecommendationStatus(
-          `Feedback accepted for movie ${result.movie_id}: ${result.feedback}.`
+          `Feedback accepted for movie ${result.movie_id}: ${result.feedback} via ${result.ranking_strategy}.`
         );
         await loadFeedbackSummary();
       } catch (error) {
@@ -1109,6 +1110,7 @@
         sendRecommendationFeedback(
           feedbackButton.dataset.feedbackMovieId,
           feedbackButton.dataset.feedbackValue,
+          feedbackButton.dataset.feedbackStrategy,
         );
         return;
       }

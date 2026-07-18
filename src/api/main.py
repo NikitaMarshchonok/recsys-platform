@@ -25,6 +25,13 @@ RankingStrategy = Literal[
     "fallback_top",
     "fallback_top_diverse",
 ]
+FeedbackRankingStrategy = Literal[
+    "als",
+    "als_diverse",
+    "fallback_top",
+    "fallback_top_diverse",
+    "unknown",
+]
 
 # Создаём приложение
 app = FastAPI(
@@ -253,8 +260,13 @@ def ensure_recommendation_feedback_table(cur):
             movie_id INTEGER NOT NULL,
             feedback VARCHAR(16) NOT NULL,
             source VARCHAR(50) NOT NULL,
+            ranking_strategy VARCHAR(32) NOT NULL DEFAULT 'unknown',
             created_at TIMESTAMP DEFAULT NOW()
         )
+    """)
+    cur.execute("""
+        ALTER TABLE recommendation_feedback
+        ADD COLUMN IF NOT EXISTS ranking_strategy VARCHAR(32) NOT NULL DEFAULT 'unknown'
     """)
 
 
@@ -267,25 +279,27 @@ def record_recommendation_feedback(feedback):
                 cur.execute(
                     """
                     INSERT INTO recommendation_feedback
-                        (user_id, movie_id, feedback, source)
-                    VALUES (%s, %s, %s, %s)
+                        (user_id, movie_id, feedback, source, ranking_strategy)
+                    VALUES (%s, %s, %s, %s, %s)
                     """,
                     (
                         feedback.user_id,
                         feedback.movie_id,
                         feedback.feedback,
                         feedback.source,
+                        feedback.ranking_strategy,
                     ),
                 )
         conn.close()
         return "postgres"
     except Exception as exc:
         logger.info(
-            "recommendation_feedback_log_only user_id=%s movie_id=%s feedback=%s source=%s error=%s",
+            "recommendation_feedback_log_only user_id=%s movie_id=%s feedback=%s source=%s ranking_strategy=%s error=%s",
             feedback.user_id,
             feedback.movie_id,
             feedback.feedback,
             feedback.source,
+            feedback.ranking_strategy,
             exc,
         )
         return "log_only"
@@ -367,6 +381,7 @@ class RecommendationFeedbackRequest(BaseModel):
     movie_id: int = Field(ge=1)
     feedback: Literal["like", "dislike"]
     source: str = Field(default="web_app", min_length=1, max_length=50)
+    ranking_strategy: FeedbackRankingStrategy = "unknown"
 
 
 # Схема ответа — что возвращаем
@@ -386,6 +401,7 @@ class RecommendationFeedbackResponse(BaseModel):
     user_id: int
     movie_id: int
     feedback: str
+    ranking_strategy: FeedbackRankingStrategy
 
 
 class RecommendationFeedbackSummaryResponse(BaseModel):
@@ -736,6 +752,7 @@ def recommendation_feedback(feedback: RecommendationFeedbackRequest):
         "user_id": feedback.user_id,
         "movie_id": feedback.movie_id,
         "feedback": feedback.feedback,
+        "ranking_strategy": feedback.ranking_strategy,
     }
 
 

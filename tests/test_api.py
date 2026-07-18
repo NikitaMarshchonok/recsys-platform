@@ -143,6 +143,7 @@ def test_web_app_response():
     assert "Why:" in response.text
     assert "/recommend/feedback" in response.text
     assert "data-feedback-movie-id" in response.text
+    assert "data-feedback-strategy" in response.text
     assert "Like" in response.text
     assert "Dislike" in response.text
     assert "Feedback Signals" in response.text
@@ -341,6 +342,7 @@ def test_recommendation_feedback_response(monkeypatch):
             "movie_id": 2,
             "feedback": "like",
             "source": "test",
+            "ranking_strategy": "als_diverse",
         },
     )
 
@@ -351,7 +353,22 @@ def test_recommendation_feedback_response(monkeypatch):
         "user_id": 1,
         "movie_id": 2,
         "feedback": "like",
+        "ranking_strategy": "als_diverse",
     }
+
+
+def test_recommendation_feedback_rejects_unknown_strategy_name():
+    response = client.post(
+        "/recommend/feedback",
+        json={
+            "user_id": 1,
+            "movie_id": 2,
+            "feedback": "like",
+            "ranking_strategy": "experimental_magic",
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_recommendation_feedback_summary(monkeypatch):
