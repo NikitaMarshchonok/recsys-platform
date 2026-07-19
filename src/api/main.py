@@ -319,6 +319,17 @@ def summarize_recommendation_feedback():
                     FROM recommendation_feedback
                 """)
                 total_feedback, likes, dislikes = cur.fetchone()
+                cur.execute("""
+                    SELECT
+                        ranking_strategy,
+                        COUNT(*),
+                        COUNT(*) FILTER (WHERE feedback = 'like'),
+                        COUNT(*) FILTER (WHERE feedback = 'dislike')
+                    FROM recommendation_feedback
+                    GROUP BY ranking_strategy
+                    ORDER BY COUNT(*) DESC, ranking_strategy
+                """)
+                strategy_rows = cur.fetchall()
         conn.close()
     except Exception as exc:
         logger.info("recommendation_feedback_summary_unavailable error=%s", exc)
@@ -328,12 +339,28 @@ def summarize_recommendation_feedback():
             "dislikes": 0,
             "like_rate": 0.0,
             "storage": "unavailable",
+            "strategies": [],
         }
 
     total_feedback = int(total_feedback or 0)
     likes = int(likes or 0)
     dislikes = int(dislikes or 0)
     like_rate = round(likes / total_feedback * 100, 1) if total_feedback else 0.0
+    strategies = []
+    for strategy, strategy_total, strategy_likes, strategy_dislikes in strategy_rows:
+        strategy_total = int(strategy_total or 0)
+        strategy_likes = int(strategy_likes or 0)
+        strategies.append({
+            "ranking_strategy": strategy,
+            "total_feedback": strategy_total,
+            "likes": strategy_likes,
+            "dislikes": int(strategy_dislikes or 0),
+            "like_rate": (
+                round(strategy_likes / strategy_total * 100, 1)
+                if strategy_total
+                else 0.0
+            ),
+        })
 
     return {
         "total_feedback": total_feedback,
@@ -341,6 +368,7 @@ def summarize_recommendation_feedback():
         "dislikes": dislikes,
         "like_rate": like_rate,
         "storage": "postgres",
+        "strategies": strategies,
     }
 
 
@@ -404,12 +432,21 @@ class RecommendationFeedbackResponse(BaseModel):
     ranking_strategy: FeedbackRankingStrategy
 
 
+class RecommendationStrategyFeedbackSummary(BaseModel):
+    ranking_strategy: FeedbackRankingStrategy
+    total_feedback: int
+    likes: int
+    dislikes: int
+    like_rate: float
+
+
 class RecommendationFeedbackSummaryResponse(BaseModel):
     total_feedback: int
     likes: int
     dislikes: int
     like_rate: float
     storage: Literal["postgres", "unavailable"]
+    strategies: list[RecommendationStrategyFeedbackSummary]
 
 
 class SimilarMovieResponse(BaseModel):

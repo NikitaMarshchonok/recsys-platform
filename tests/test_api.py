@@ -65,6 +65,12 @@ class FakeFeedbackSummaryCursor(FakeCursor):
     def fetchone(self):
         return (8, 6, 2)
 
+    def fetchall(self):
+        return [
+            ("als_diverse", 5, 4, 1),
+            ("als", 3, 2, 1),
+        ]
+
 
 class FakeFeedbackSummaryConnection(FakeConnection):
     def cursor(self):
@@ -148,6 +154,8 @@ def test_web_app_response():
     assert "Dislike" in response.text
     assert "Feedback Signals" in response.text
     assert "feedback-summary" in response.text
+    assert "Strategy breakdown" in response.text
+    assert "feedback-strategy-breakdown" in response.text
     assert "/recommend/feedback/summary" in response.text
     assert 'class="sidebar"' in response.text
     assert "position: sticky" in response.text
@@ -387,6 +395,22 @@ def test_recommendation_feedback_summary(monkeypatch):
         "dislikes": 2,
         "like_rate": 75.0,
         "storage": "postgres",
+        "strategies": [
+            {
+                "ranking_strategy": "als_diverse",
+                "total_feedback": 5,
+                "likes": 4,
+                "dislikes": 1,
+                "like_rate": 80.0,
+            },
+            {
+                "ranking_strategy": "als",
+                "total_feedback": 3,
+                "likes": 2,
+                "dislikes": 1,
+                "like_rate": 66.7,
+            },
+        ],
     }
 
 
@@ -405,6 +429,7 @@ def test_recommendation_feedback_summary_when_database_is_unavailable(monkeypatc
         "dislikes": 0,
         "like_rate": 0.0,
         "storage": "unavailable",
+        "strategies": [],
     }
 
 

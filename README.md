@@ -189,7 +189,7 @@ diversity re-ranking, and cold-start fallback results.
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
 | POST | `/recommend` | Personalized recommendations with optional genre-diversity re-ranking |
 | POST | `/recommend/feedback` | Capture like/dislike feedback for recommendation quality loops |
-| GET | `/recommend/feedback/summary` | Aggregate recommendation feedback and like rate |
+| GET | `/recommend/feedback/summary` | Aggregate overall and per-strategy feedback metrics |
 | GET | `/similar_movies/{movie_id}` | Similar movies by genre |
 | GET | `/stats` | Request statistics from PostgreSQL |
 

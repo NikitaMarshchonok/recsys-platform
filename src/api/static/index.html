@@ -514,6 +514,8 @@
           </div>
           <div id="feedback-summary" class="summary"></div>
           <p id="feedback-summary-status" class="status">Loading feedback metrics...</p>
+          <p class="quick-search-label" style="margin: 0 0 8px;">Strategy breakdown</p>
+          <div id="feedback-strategy-breakdown" class="side-list"></div>
         </section>
 
         <section aria-labelledby="movie-detail-title" style="margin-top: 16px;">
@@ -576,6 +578,7 @@
     const modelInfoEl = document.querySelector("#model-info");
     const feedbackSummaryEl = document.querySelector("#feedback-summary");
     const feedbackSummaryStatusEl = document.querySelector("#feedback-summary-status");
+    const feedbackStrategyBreakdownEl = document.querySelector("#feedback-strategy-breakdown");
     const topMoviesEl = document.querySelector("#top-movies");
     const movieDetailForm = document.querySelector("#movie-detail-form");
     const detailMovieIdInput = document.querySelector("#detail-movie-id");
@@ -665,6 +668,17 @@
       return Number.isFinite(rating) ? rating.toFixed(2) : "0.00";
     }
 
+    function formatStrategyLabel(rankingStrategy) {
+      const strategyLabels = {
+        als: "ALS",
+        als_diverse: "ALS + diversity",
+        fallback_top: "Top fallback",
+        fallback_top_diverse: "Top fallback + diversity",
+        unknown: "Unknown",
+      };
+      return strategyLabels[rankingStrategy] || rankingStrategy;
+    }
+
     function movieCard(movie) {
       const title = escapeHtml(movie.title);
       const genres = escapeHtml(movie.genres);
@@ -704,15 +718,7 @@
       const rawRatingPill = Math.abs(rawRating - Number(movie.predicted_rating)) >= 0.01
         ? `<span class="pill">raw ${formatRating(rawRating)}</span>`
         : "";
-      const strategyLabels = {
-        als: "ALS",
-        als_diverse: "ALS + diversity",
-        fallback_top: "Top fallback",
-        fallback_top_diverse: "Top fallback + diversity",
-      };
-      const strategy = escapeHtml(
-        strategyLabels[movie.ranking_strategy] || movie.ranking_strategy
-      );
+      const strategy = escapeHtml(formatStrategyLabel(movie.ranking_strategy));
 
       return `
         <article class="movie">
@@ -961,6 +967,14 @@
         <div class="metric"><span>Dislikes</span><strong>${summary.dislikes}</strong></div>
         <div class="metric"><span>Like rate</span><strong>${summary.like_rate}%</strong></div>
       `;
+      feedbackStrategyBreakdownEl.innerHTML = summary.strategies.length === 0
+        ? '<p class="side-meta">No stored strategy feedback yet.</p>'
+        : summary.strategies.map((strategy) => `
+          <div class="side-item">
+            <p class="side-title">${escapeHtml(formatStrategyLabel(strategy.ranking_strategy))}</p>
+            <p class="side-meta">${strategy.total_feedback} signals - ${strategy.like_rate}% like rate</p>
+          </div>
+        `).join("");
       feedbackSummaryStatusEl.textContent = summary.storage === "postgres"
         ? "Live metrics from PostgreSQL."
         : "PostgreSQL unavailable; feedback is logged only.";
@@ -972,6 +986,7 @@
         renderFeedbackSummary(summary);
       } catch (error) {
         feedbackSummaryEl.innerHTML = "";
+        feedbackStrategyBreakdownEl.innerHTML = "";
         feedbackSummaryStatusEl.textContent = "Feedback metrics are temporarily unavailable.";
       }
     }
