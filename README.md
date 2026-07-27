@@ -184,7 +184,7 @@ The demo UI also reports primary-genre coverage for each recommendation batch.
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Top-rated movies fallback ranking, optionally filtered by genre |
-| GET | `/movies/search` | Search movies by title with optional genre and rating filters |
+| GET | `/movies/search` | Search movies with genre/rating filters and rating, popularity, or title sorting |
 | GET | `/movies/{movie_id}` | Movie catalog detail for recommendation debugging |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |
@@ -262,7 +262,7 @@ curl "http://localhost:8001/movies/1"
 Movie search:
 
 ```bash
-curl "http://localhost:8001/movies/search?q=Movie&genre=Drama&min_rating=3.0"
+curl "http://localhost:8001/movies/search?q=Movie&genre=Drama&min_rating=3.0&sort_by=popularity"
 ```
 
 User rating history:

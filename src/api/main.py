@@ -1022,6 +1022,7 @@ def search_movies(
     n: int = Query(default=10, ge=1, le=50),
     genre: str | None = Query(default=None, min_length=1),
     min_rating: float | None = Query(default=None, ge=0, le=5),
+    sort_by: Literal["rating", "popularity", "title"] = Query(default="rating"),
 ):
     movie_features = pd.read_csv(settings.movie_features_path)
 
@@ -1039,10 +1040,16 @@ def search_movies(
     if min_rating is not None:
         matches = matches[matches["avg_rating"] >= min_rating]
 
-    matches = matches.sort_values(
-        ["avg_rating", "total_ratings", "title"],
-        ascending=[False, False, True],
-    ).head(n)
+    sort_options = {
+        "rating": (["avg_rating", "total_ratings", "title"], [False, False, True]),
+        "popularity": (
+            ["total_ratings", "avg_rating", "title"],
+            [False, False, True],
+        ),
+        "title": (["title"], [True]),
+    }
+    sort_columns, sort_order = sort_options[sort_by]
+    matches = matches.sort_values(sort_columns, ascending=sort_order).head(n)
 
     return [
         {

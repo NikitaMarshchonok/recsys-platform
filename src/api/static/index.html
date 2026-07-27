@@ -110,6 +110,10 @@
       margin-bottom: 14px;
     }
 
+    .search-controls {
+      grid-template-columns: minmax(140px, 1fr) 110px 96px 116px 70px 82px;
+    }
+
     .recommendation-controls {
       grid-template-columns: 120px 92px minmax(140px, 1fr) minmax(150px, 1fr) 130px;
     }
@@ -413,7 +417,7 @@
             <h2 id="search-title">Movie Search</h2>
           </div>
 
-          <form id="search-form" class="controls">
+          <form id="search-form" class="controls search-controls">
             <label>
               Title
               <input id="query" name="q" placeholder="Horizon, River, Storm" autocomplete="off">
@@ -427,6 +431,14 @@
             <label>
               Min rating
               <input id="min-rating" name="min_rating" type="number" min="0" max="5" step="0.1" value="3.0">
+            </label>
+            <label>
+              Sort by
+              <select id="sort-by" name="sort_by">
+                <option value="rating">Top rated</option>
+                <option value="popularity">Most popular</option>
+                <option value="title">Title A-Z</option>
+              </select>
             </label>
             <label>
               Limit
@@ -577,6 +589,7 @@
     const queryInput = document.querySelector("#query");
     const genreSelect = document.querySelector("#genre");
     const minRatingInput = document.querySelector("#min-rating");
+    const sortBySelect = document.querySelector("#sort-by");
     const limitInput = document.querySelector("#limit");
     const searchButton = document.querySelector("#search-button");
     const statusEl = document.querySelector("#search-status");
@@ -856,6 +869,7 @@
       queryInput.value = "";
       genreSelect.value = "";
       minRatingInput.value = "3.0";
+      sortBySelect.value = "rating";
       limitInput.value = "8";
       searchMovies();
     }
@@ -869,6 +883,7 @@
         params.set("q", query);
       }
       params.set("n", limitInput.value || "8");
+      params.set("sort_by", sortBySelect.value || "rating");
 
       if (genreSelect.value) {
         params.set("genre", genreSelect.value);

@@ -176,6 +176,9 @@ def test_web_app_response():
     assert 'aria-pressed="true">Top rated' in response.text
     assert "reset-search-button" in response.text
     assert "Reset filters" in response.text
+    assert 'id="sort-by"' in response.text
+    assert "Most popular" in response.text
+    assert 'params.set("sort_by"' in response.text
     assert "from user history" in response.text
     assert "Sample users" in response.text
     assert "data-sample-user-id" in response.text
@@ -826,6 +829,23 @@ def test_movie_search_filters_by_genre_and_rating(monkeypatch):
             "total_ratings": 120,
         },
     ]
+
+
+def test_movie_search_sorts_by_popularity(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Critics Choice", "Crowd Favorite", "Steady Classic"],
+        "genres": ["Drama", "Action", "Comedy"],
+        "avg_rating": [4.9, 4.2, 4.5],
+        "total_ratings": [10, 500, 100],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/search?sort_by=popularity&n=3")
+
+    assert response.status_code == 200
+    assert [movie["movie_id"] for movie in response.json()] == [2, 3, 1]
 
 
 def test_user_profile_response(monkeypatch):
