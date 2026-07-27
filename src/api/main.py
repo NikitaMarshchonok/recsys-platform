@@ -323,6 +323,41 @@ def record_recommendation_feedback(feedback):
         return "log_only"
 
 
+def remove_recommendation_feedback(feedback):
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                ensure_recommendation_feedback_table(cur)
+                cur.execute(
+                    """
+                    DELETE FROM recommendation_feedback
+                    WHERE user_id = %s
+                      AND movie_id = %s
+                      AND source = %s
+                      AND ranking_strategy = %s
+                    """,
+                    (
+                        feedback.user_id,
+                        feedback.movie_id,
+                        feedback.source,
+                        feedback.ranking_strategy,
+                    ),
+                )
+        conn.close()
+        return "postgres"
+    except Exception as exc:
+        logger.info(
+            "recommendation_feedback_remove_log_only user_id=%s movie_id=%s source=%s ranking_strategy=%s error=%s",
+            feedback.user_id,
+            feedback.movie_id,
+            feedback.source,
+            feedback.ranking_strategy,
+            exc,
+        )
+        return "log_only"
+
+
 def summarize_recommendation_feedback():
     try:
         conn = get_db_connection()
@@ -473,6 +508,13 @@ class RecommendationFeedbackRequest(BaseModel):
     ranking_strategy: FeedbackRankingStrategy = "unknown"
 
 
+class RecommendationFeedbackDeleteRequest(BaseModel):
+    user_id: int = Field(ge=1)
+    movie_id: int = Field(ge=1)
+    source: str = Field(default="web_app", min_length=1, max_length=50)
+    ranking_strategy: FeedbackRankingStrategy = "unknown"
+
+
 # Схема ответа — что возвращаем
 class MovieRecommendation(BaseModel):
     movie_id: int
@@ -490,6 +532,14 @@ class RecommendationFeedbackResponse(BaseModel):
     user_id: int
     movie_id: int
     feedback: str
+    ranking_strategy: FeedbackRankingStrategy
+
+
+class RecommendationFeedbackDeleteResponse(BaseModel):
+    status: str
+    storage: str
+    user_id: int
+    movie_id: int
     ranking_strategy: FeedbackRankingStrategy
 
 
@@ -856,6 +906,22 @@ def recommendation_feedback(feedback: RecommendationFeedbackRequest):
         "user_id": feedback.user_id,
         "movie_id": feedback.movie_id,
         "feedback": feedback.feedback,
+        "ranking_strategy": feedback.ranking_strategy,
+    }
+
+
+@app.delete(
+    "/recommend/feedback",
+    response_model=RecommendationFeedbackDeleteResponse,
+)
+def delete_recommendation_feedback(feedback: RecommendationFeedbackDeleteRequest):
+    storage = remove_recommendation_feedback(feedback)
+
+    return {
+        "status": "removed",
+        "storage": storage,
+        "user_id": feedback.user_id,
+        "movie_id": feedback.movie_id,
         "ranking_strategy": feedback.ranking_strategy,
     }
 

@@ -658,6 +658,19 @@
       return response.json();
     }
 
+    async function deleteJson(url, payload) {
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Request failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
     function escapeHtml(value) {
       const escapeMap = {
         "&": "&amp;",
@@ -935,6 +948,7 @@
       const movieId = feedbackButton.dataset.feedbackMovieId;
       const feedback = feedbackButton.dataset.feedbackValue;
       const rankingStrategy = feedbackButton.dataset.feedbackStrategy;
+      const removeFeedback = feedbackButton.getAttribute("aria-pressed") === "true";
       const feedbackButtons = document.querySelectorAll(
         `[data-feedback-movie-id="${movieId}"][data-feedback-strategy="${rankingStrategy}"]`
       );
@@ -943,22 +957,37 @@
       });
 
       try {
-        const result = await postJson("/recommend/feedback", {
-          user_id: Number(recommendationUserIdInput.value || 1),
-          movie_id: Number(movieId),
-          feedback,
-          source: "web_app",
-          ranking_strategy: rankingStrategy,
-        });
-        setRecommendationStatus(
-          `Feedback accepted for movie ${result.movie_id}: ${result.feedback} via ${result.ranking_strategy}.`
-        );
-        feedbackButtons.forEach((button) => {
-          button.setAttribute(
-            "aria-pressed",
-            String(button.dataset.feedbackValue === result.feedback),
+        if (removeFeedback) {
+          const result = await deleteJson("/recommend/feedback", {
+            user_id: Number(recommendationUserIdInput.value || 1),
+            movie_id: Number(movieId),
+            source: "web_app",
+            ranking_strategy: rankingStrategy,
+          });
+          setRecommendationStatus(
+            `Feedback removed for movie ${result.movie_id} via ${result.ranking_strategy}.`
           );
-        });
+          feedbackButtons.forEach((button) => {
+            button.setAttribute("aria-pressed", "false");
+          });
+        } else {
+          const result = await postJson("/recommend/feedback", {
+            user_id: Number(recommendationUserIdInput.value || 1),
+            movie_id: Number(movieId),
+            feedback,
+            source: "web_app",
+            ranking_strategy: rankingStrategy,
+          });
+          setRecommendationStatus(
+            `Feedback accepted for movie ${result.movie_id}: ${result.feedback} via ${result.ranking_strategy}.`
+          );
+          feedbackButtons.forEach((button) => {
+            button.setAttribute(
+              "aria-pressed",
+              String(button.dataset.feedbackValue === result.feedback),
+            );
+          });
+        }
         await loadFeedbackSummary();
       } catch (error) {
         setRecommendationStatus(error.message, true);

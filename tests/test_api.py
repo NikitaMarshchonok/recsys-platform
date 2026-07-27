@@ -187,6 +187,8 @@ def test_web_app_response():
     assert '.inline-action[aria-pressed="true"]' in response.text
     assert "restoreRecommendationFeedback" in response.text
     assert "/recommend/feedback/users/" in response.text
+    assert "deleteJson" in response.text
+    assert "Feedback removed for movie" in response.text
     assert "Like" in response.text
     assert "Dislike" in response.text
     assert "Feedback Signals" in response.text
@@ -438,6 +440,35 @@ def test_recommendation_feedback_updates_existing_signal(monkeypatch):
     )
     assert not any(
         "INSERT INTO recommendation_feedback" in query
+        for query in connection.cursor_instance.queries
+    )
+
+
+def test_recommendation_feedback_can_be_removed(monkeypatch):
+    connection = ExistingFeedbackConnection()
+    monkeypatch.setattr(api_module, "get_db_connection", lambda: connection)
+
+    response = client.request(
+        "DELETE",
+        "/recommend/feedback",
+        json={
+            "user_id": 1,
+            "movie_id": 2,
+            "source": "web_app",
+            "ranking_strategy": "als_diverse",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "removed",
+        "storage": "postgres",
+        "user_id": 1,
+        "movie_id": 2,
+        "ranking_strategy": "als_diverse",
+    }
+    assert any(
+        "DELETE FROM recommendation_feedback" in query
         for query in connection.cursor_instance.queries
     )
 
