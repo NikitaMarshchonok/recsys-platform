@@ -168,6 +168,7 @@ Request personalized recommendations:
 
 Each recommendation includes `ranking_strategy` so clients can distinguish pure ALS,
 diversity re-ranking, and cold-start fallback results.
+The demo UI also reports primary-genre coverage for each recommendation batch.
 
 ## API Endpoints
 

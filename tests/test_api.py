@@ -161,6 +161,9 @@ def test_web_app_response():
     assert response.headers["content-type"].startswith("text/html")
     assert "RecSys Demo" in response.text
     assert "Recommendations" in response.text
+    assert "recommendation-quality" in response.text
+    assert "genre coverage" in response.text
+    assert "primaryGenre" in response.text
     assert "Model Status" in response.text
     assert "model-info" in response.text
     assert "Movie Detail" in response.text

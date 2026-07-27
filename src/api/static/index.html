@@ -474,6 +474,7 @@
           </form>
 
           <p id="recommendation-status" class="status">Enter a user and request recommendations.</p>
+          <div id="recommendation-quality" class="meta" style="margin: -4px 0 12px;"></div>
           <div id="recommendations" class="grid"></div>
         </section>
 
@@ -598,6 +599,7 @@
     const recommendationFallbackInput = document.querySelector("#recommend-fallback");
     const recommendationButton = document.querySelector("#recommend-button");
     const recommendationStatusEl = document.querySelector("#recommendation-status");
+    const recommendationQualityEl = document.querySelector("#recommendation-quality");
     const recommendationsEl = document.querySelector("#recommendations");
     const userContextForm = document.querySelector("#user-context-form");
     const contextUserIdInput = document.querySelector("#context-user-id");
@@ -698,6 +700,10 @@
       return strategyLabels[rankingStrategy] || rankingStrategy;
     }
 
+    function primaryGenre(genres) {
+      return String(genres || "").split(",")[0].trim() || "Unknown";
+    }
+
     function movieCard(movie) {
       const title = escapeHtml(movie.title);
       const genres = escapeHtml(movie.genres);
@@ -762,11 +768,23 @@
     function renderRecommendations(movies, diversified = false) {
       if (movies.length === 0) {
         recommendationsEl.innerHTML = "";
+        recommendationQualityEl.innerHTML = "";
         setRecommendationStatus("No recommendations returned.");
         return;
       }
 
       recommendationsEl.innerHTML = movies.map(recommendationCard).join("");
+      const primaryGenres = new Set(
+        movies.map((movie) => primaryGenre(movie.genres).toLowerCase())
+      );
+      const genreCoverage = Math.round(primaryGenres.size / movies.length * 100);
+      const strategy = escapeHtml(formatStrategyLabel(movies[0].ranking_strategy));
+      recommendationQualityEl.innerHTML = `
+        <span class="pill">${movies.length} results</span>
+        <span class="pill">${primaryGenres.size} primary genres</span>
+        <span class="pill">${genreCoverage}% genre coverage</span>
+        <span class="pill">${strategy}</span>
+      `;
       const rankingLabel = diversified ? " with genre diversity" : "";
       setRecommendationStatus(`${movies.length} recommendations returned${rankingLabel}.`);
     }
@@ -902,6 +920,7 @@
       const userId = Number(recommendationUserIdInput.value || 1);
       recommendationButton.disabled = true;
       recommendationsEl.innerHTML = "";
+      recommendationQualityEl.innerHTML = "";
       setRecommendationStatus("Loading recommendations...");
 
       try {
