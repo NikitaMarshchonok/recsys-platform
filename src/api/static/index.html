@@ -245,6 +245,12 @@
       color: var(--accent-strong);
     }
 
+    .inline-action[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
     .quick-searches {
       display: flex;
       flex-wrap: wrap;
@@ -732,8 +738,8 @@
           </div>
           <p class="side-meta" style="margin-top: 8px;">Why: ${reason}</p>
           <div class="meta" style="margin-top: 8px;">
-            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="like" data-feedback-strategy="${movie.ranking_strategy}">Like</button>
-            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="dislike" data-feedback-strategy="${movie.ranking_strategy}">Dislike</button>
+            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="like" data-feedback-strategy="${movie.ranking_strategy}" aria-pressed="false">Like</button>
+            <button class="inline-action" type="button" data-feedback-movie-id="${movie.movie_id}" data-feedback-value="dislike" data-feedback-strategy="${movie.ranking_strategy}" aria-pressed="false">Dislike</button>
           </div>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </article>
@@ -899,7 +905,17 @@
       }
     }
 
-    async function sendRecommendationFeedback(movieId, feedback, rankingStrategy) {
+    async function sendRecommendationFeedback(feedbackButton) {
+      const movieId = feedbackButton.dataset.feedbackMovieId;
+      const feedback = feedbackButton.dataset.feedbackValue;
+      const rankingStrategy = feedbackButton.dataset.feedbackStrategy;
+      const feedbackButtons = document.querySelectorAll(
+        `[data-feedback-movie-id="${movieId}"][data-feedback-strategy="${rankingStrategy}"]`
+      );
+      feedbackButtons.forEach((button) => {
+        button.disabled = true;
+      });
+
       try {
         const result = await postJson("/recommend/feedback", {
           user_id: Number(recommendationUserIdInput.value || 1),
@@ -911,9 +927,19 @@
         setRecommendationStatus(
           `Feedback accepted for movie ${result.movie_id}: ${result.feedback} via ${result.ranking_strategy}.`
         );
+        feedbackButtons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.feedbackValue === result.feedback),
+          );
+        });
         await loadFeedbackSummary();
       } catch (error) {
         setRecommendationStatus(error.message, true);
+      } finally {
+        feedbackButtons.forEach((button) => {
+          button.disabled = false;
+        });
       }
     }
 
@@ -1122,11 +1148,7 @@
 
       const feedbackButton = event.target.closest("[data-feedback-movie-id]");
       if (feedbackButton) {
-        sendRecommendationFeedback(
-          feedbackButton.dataset.feedbackMovieId,
-          feedbackButton.dataset.feedbackValue,
-          feedbackButton.dataset.feedbackStrategy,
-        );
+        sendRecommendationFeedback(feedbackButton);
         return;
       }
 

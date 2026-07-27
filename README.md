@@ -217,6 +217,9 @@ curl -X POST "http://localhost:8001/recommend/feedback" \
   -d '{"user_id": 1, "movie_id": 1, "feedback": "like", "source": "web_app", "ranking_strategy": "als_diverse"}'
 ```
 
+Repeated feedback for the same user, movie, source, and ranking strategy updates the
+existing signal instead of inflating aggregate metrics.
+
 Feedback summary:
 
 ```bash

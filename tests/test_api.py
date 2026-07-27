@@ -33,6 +33,8 @@ class FakeModel:
 
 
 class FakeCursor:
+    rowcount = 0
+
     def __enter__(self):
         return self
 
@@ -75,6 +77,24 @@ class FakeFeedbackSummaryCursor(FakeCursor):
 class FakeFeedbackSummaryConnection(FakeConnection):
     def cursor(self):
         return FakeFeedbackSummaryCursor()
+
+
+class ExistingFeedbackCursor(FakeCursor):
+    def __init__(self):
+        self.queries = []
+
+    def execute(self, query, params=None):
+        super().execute(query, params)
+        self.queries.append(query)
+        self.rowcount = 1 if "UPDATE recommendation_feedback" in query else 0
+
+
+class ExistingFeedbackConnection(FakeConnection):
+    def __init__(self):
+        self.cursor_instance = ExistingFeedbackCursor()
+
+    def cursor(self):
+        return self.cursor_instance
 
 
 @pytest.fixture(autouse=True)
@@ -150,6 +170,8 @@ def test_web_app_response():
     assert "/recommend/feedback" in response.text
     assert "data-feedback-movie-id" in response.text
     assert "data-feedback-strategy" in response.text
+    assert 'aria-pressed="false">Like' in response.text
+    assert '.inline-action[aria-pressed="true"]' in response.text
     assert "Like" in response.text
     assert "Dislike" in response.text
     assert "Feedback Signals" in response.text
@@ -377,6 +399,32 @@ def test_recommendation_feedback_rejects_unknown_strategy_name():
     )
 
     assert response.status_code == 422
+
+
+def test_recommendation_feedback_updates_existing_signal(monkeypatch):
+    connection = ExistingFeedbackConnection()
+    monkeypatch.setattr(api_module, "get_db_connection", lambda: connection)
+
+    response = client.post(
+        "/recommend/feedback",
+        json={
+            "user_id": 1,
+            "movie_id": 2,
+            "feedback": "dislike",
+            "source": "web_app",
+            "ranking_strategy": "als_diverse",
+        },
+    )
+
+    assert response.status_code == 200
+    assert any(
+        "UPDATE recommendation_feedback" in query
+        for query in connection.cursor_instance.queries
+    )
+    assert not any(
+        "INSERT INTO recommendation_feedback" in query
+        for query in connection.cursor_instance.queries
+    )
 
 
 def test_recommendation_feedback_summary(monkeypatch):

@@ -278,18 +278,36 @@ def record_recommendation_feedback(feedback):
                 ensure_recommendation_feedback_table(cur)
                 cur.execute(
                     """
-                    INSERT INTO recommendation_feedback
-                        (user_id, movie_id, feedback, source, ranking_strategy)
-                    VALUES (%s, %s, %s, %s, %s)
+                    UPDATE recommendation_feedback
+                    SET feedback = %s, created_at = NOW()
+                    WHERE user_id = %s
+                      AND movie_id = %s
+                      AND source = %s
+                      AND ranking_strategy = %s
                     """,
                     (
+                        feedback.feedback,
                         feedback.user_id,
                         feedback.movie_id,
-                        feedback.feedback,
                         feedback.source,
                         feedback.ranking_strategy,
                     ),
                 )
+                if cur.rowcount == 0:
+                    cur.execute(
+                        """
+                        INSERT INTO recommendation_feedback
+                            (user_id, movie_id, feedback, source, ranking_strategy)
+                        VALUES (%s, %s, %s, %s, %s)
+                        """,
+                        (
+                            feedback.user_id,
+                            feedback.movie_id,
+                            feedback.feedback,
+                            feedback.source,
+                            feedback.ranking_strategy,
+                        ),
+                    )
         conn.close()
         return "postgres"
     except Exception as exc:
