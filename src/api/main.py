@@ -390,6 +390,49 @@ def summarize_recommendation_feedback():
     }
 
 
+def load_user_recommendation_feedback(user_id: int, source: str):
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                ensure_recommendation_feedback_table(cur)
+                cur.execute(
+                    """
+                    SELECT DISTINCT ON (movie_id, ranking_strategy)
+                        movie_id,
+                        feedback,
+                        ranking_strategy
+                    FROM recommendation_feedback
+                    WHERE user_id = %s AND source = %s
+                    ORDER BY
+                        movie_id,
+                        ranking_strategy,
+                        created_at DESC,
+                        id DESC
+                    """,
+                    (user_id, source),
+                )
+                rows = cur.fetchall()
+        conn.close()
+    except Exception as exc:
+        logger.info(
+            "recommendation_feedback_state_unavailable user_id=%s source=%s error=%s",
+            user_id,
+            source,
+            exc,
+        )
+        return []
+
+    return [
+        {
+            "movie_id": int(movie_id),
+            "feedback": feedback,
+            "ranking_strategy": ranking_strategy,
+        }
+        for movie_id, feedback, ranking_strategy in rows
+    ]
+
+
 # Схема запроса — что принимаем
 class RecommendRequest(BaseModel):
     user_id: int
@@ -447,6 +490,12 @@ class RecommendationFeedbackResponse(BaseModel):
     user_id: int
     movie_id: int
     feedback: str
+    ranking_strategy: FeedbackRankingStrategy
+
+
+class RecommendationFeedbackStateResponse(BaseModel):
+    movie_id: int
+    feedback: Literal["like", "dislike"]
     ranking_strategy: FeedbackRankingStrategy
 
 
@@ -809,6 +858,17 @@ def recommendation_feedback(feedback: RecommendationFeedbackRequest):
         "feedback": feedback.feedback,
         "ranking_strategy": feedback.ranking_strategy,
     }
+
+
+@app.get(
+    "/recommend/feedback/users/{user_id}",
+    response_model=list[RecommendationFeedbackStateResponse],
+)
+def recommendation_feedback_for_user(
+    user_id: int,
+    source: str = Query(default="web_app", min_length=1, max_length=50),
+):
+    return load_user_recommendation_feedback(user_id, source)
 
 
 @app.get(

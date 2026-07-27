@@ -886,22 +886,48 @@
     }
 
     async function loadRecommendations() {
+      const userId = Number(recommendationUserIdInput.value || 1);
       recommendationButton.disabled = true;
       recommendationsEl.innerHTML = "";
       setRecommendationStatus("Loading recommendations...");
 
       try {
         const movies = await postJson("/recommend", {
-          user_id: Number(recommendationUserIdInput.value || 1),
+          user_id: userId,
           n_recommendations: Number(recommendationLimitInput.value || 5),
           fallback_to_top: recommendationFallbackInput.checked,
           diversify: recommendationDiversifyInput.checked,
         });
         renderRecommendations(movies, recommendationDiversifyInput.checked);
+        await restoreRecommendationFeedback(userId);
       } catch (error) {
         setRecommendationStatus(error.message, true);
       } finally {
         recommendationButton.disabled = false;
+      }
+    }
+
+    async function restoreRecommendationFeedback(userId) {
+      try {
+        const signals = await getJson(
+          `/recommend/feedback/users/${userId}?source=web_app`
+        );
+        const feedbackByRecommendation = new Map(
+          signals.map((signal) => [
+            `${signal.movie_id}:${signal.ranking_strategy}`,
+            signal.feedback,
+          ])
+        );
+
+        document.querySelectorAll("[data-feedback-movie-id]").forEach((button) => {
+          const key = `${button.dataset.feedbackMovieId}:${button.dataset.feedbackStrategy}`;
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.feedbackValue === feedbackByRecommendation.get(key)),
+          );
+        });
+      } catch (error) {
+        // Recommendation cards remain usable when feedback storage is unavailable.
       }
     }
 

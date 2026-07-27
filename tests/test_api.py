@@ -97,6 +97,19 @@ class ExistingFeedbackConnection(FakeConnection):
         return self.cursor_instance
 
 
+class FakeUserFeedbackCursor(FakeCursor):
+    def fetchall(self):
+        return [
+            (2, "like", "als_diverse"),
+            (5, "dislike", "als"),
+        ]
+
+
+class FakeUserFeedbackConnection(FakeConnection):
+    def cursor(self):
+        return FakeUserFeedbackCursor()
+
+
 @pytest.fixture(autouse=True)
 def mock_api_resources(monkeypatch):
     movies = pd.DataFrame({
@@ -172,6 +185,8 @@ def test_web_app_response():
     assert "data-feedback-strategy" in response.text
     assert 'aria-pressed="false">Like' in response.text
     assert '.inline-action[aria-pressed="true"]' in response.text
+    assert "restoreRecommendationFeedback" in response.text
+    assert "/recommend/feedback/users/" in response.text
     assert "Like" in response.text
     assert "Dislike" in response.text
     assert "Feedback Signals" in response.text
@@ -425,6 +440,30 @@ def test_recommendation_feedback_updates_existing_signal(monkeypatch):
         "INSERT INTO recommendation_feedback" in query
         for query in connection.cursor_instance.queries
     )
+
+
+def test_recommendation_feedback_state_for_user(monkeypatch):
+    monkeypatch.setattr(
+        api_module,
+        "get_db_connection",
+        lambda: FakeUserFeedbackConnection(),
+    )
+
+    response = client.get("/recommend/feedback/users/1?source=web_app")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "movie_id": 2,
+            "feedback": "like",
+            "ranking_strategy": "als_diverse",
+        },
+        {
+            "movie_id": 5,
+            "feedback": "dislike",
+            "ranking_strategy": "als",
+        },
+    ]
 
 
 def test_recommendation_feedback_summary(monkeypatch):
