@@ -602,6 +602,7 @@ class TopMovieResponse(BaseModel):
     genres: str
     avg_rating: float
     total_ratings: int
+    confidence_score: float
 
 
 class MovieDetailResponse(BaseModel):
@@ -610,6 +611,7 @@ class MovieDetailResponse(BaseModel):
     genres: str
     avg_rating: float
     total_ratings: int
+    confidence_score: float
 
 
 class GenreSummaryResponse(BaseModel):
@@ -1010,6 +1012,7 @@ def top_movies(
             "genres": row["genres"],
             "avg_rating": round(row["avg_rating"], 2),
             "total_ratings": int(row["total_ratings"]),
+            "confidence_score": round(float(row["_ranking_score"]), 2),
         }
         for _, row in top.iterrows()
     ]
@@ -1086,6 +1089,7 @@ def search_movies(
             "genres": row["genres"],
             "avg_rating": round(float(row["avg_rating"]), 2),
             "total_ratings": int(row["total_ratings"]),
+            "confidence_score": round(float(row["_ranking_score"]), 2),
         }
         for _, row in matches.iterrows()
     ]
@@ -1093,7 +1097,9 @@ def search_movies(
 
 @app.get("/movies/{movie_id}", response_model=MovieDetailResponse)
 def movie_detail(movie_id: int):
-    movie_features = pd.read_csv(settings.movie_features_path)
+    movie_features = rank_movies_by_confidence(
+        pd.read_csv(settings.movie_features_path)
+    )
 
     target = movie_features[movie_features["movieId"] == movie_id]
     if target.empty:
@@ -1106,6 +1112,7 @@ def movie_detail(movie_id: int):
         "genres": row["genres"],
         "avg_rating": round(float(row["avg_rating"]), 2),
         "total_ratings": int(row["total_ratings"]),
+        "confidence_score": round(float(row["_ranking_score"]), 2),
     }
 
 

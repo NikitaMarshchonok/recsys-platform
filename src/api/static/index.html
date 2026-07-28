@@ -727,6 +727,7 @@
           <div class="meta">
             <span class="pill">${genres}</span>
             <span class="pill">rating ${movie.avg_rating}</span>
+            <span class="pill">confidence ${formatRating(movie.confidence_score)}</span>
             <span class="pill">${movie.total_ratings} ratings</span>
           </div>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
@@ -840,6 +841,7 @@
           <p class="side-meta">${genres}</p>
           <div class="meta" style="margin-top: 8px;">
             <span class="pill">rating ${movie.avg_rating}</span>
+            <span class="pill">confidence ${formatRating(movie.confidence_score)}</span>
             <span class="pill">${movie.total_ratings} ratings</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
@@ -1110,7 +1112,7 @@
       topMoviesEl.innerHTML = movies.map((movie) => `
         <div class="side-item">
           <p class="side-title">${escapeHtml(movie.title)}</p>
-          <p class="side-meta">${escapeHtml(movie.genres)} - rating ${movie.avg_rating} - ${movie.total_ratings} ratings</p>
+          <p class="side-meta">${escapeHtml(movie.genres)} - rating ${movie.avg_rating} - confidence ${formatRating(movie.confidence_score)} - ${movie.total_ratings} ratings</p>
           <button class="inline-action" type="button" data-inspect-movie-id="${movie.movie_id}">Inspect</button>
         </div>
       `).join("");

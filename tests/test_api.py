@@ -179,6 +179,8 @@ def test_web_app_response():
     assert 'id="sort-by"' in response.text
     assert "Most popular" in response.text
     assert 'params.set("sort_by"' in response.text
+    assert "confidence_score" in response.text
+    assert "confidence ${formatRating" in response.text
     assert "from user history" in response.text
     assert "Sample users" in response.text
     assert "data-sample-user-id" in response.text
@@ -646,8 +648,22 @@ def test_top_movies_response(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == [
-        {"movie_id": 3, "title": "Movie 3", "genres": "Comedy", "avg_rating": 4.8, "total_ratings": 120},
-        {"movie_id": 2, "title": "Movie 2", "genres": "Action", "avg_rating": 4.8, "total_ratings": 80},
+        {
+            "movie_id": 3,
+            "title": "Movie 3",
+            "genres": "Comedy",
+            "avg_rating": 4.8,
+            "total_ratings": 120,
+            "confidence_score": 4.75,
+        },
+        {
+            "movie_id": 2,
+            "title": "Movie 2",
+            "genres": "Action",
+            "avg_rating": 4.8,
+            "total_ratings": 80,
+            "confidence_score": 4.74,
+        },
     ]
 
 
@@ -683,8 +699,22 @@ def test_top_movies_filters_by_genre(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == [
-        {"movie_id": 3, "title": "Movie 3", "genres": "Drama", "avg_rating": 4.8, "total_ratings": 120},
-        {"movie_id": 1, "title": "Movie 1", "genres": "Drama", "avg_rating": 4.5, "total_ratings": 100},
+        {
+            "movie_id": 3,
+            "title": "Movie 3",
+            "genres": "Drama",
+            "avg_rating": 4.8,
+            "total_ratings": 120,
+            "confidence_score": 4.77,
+        },
+        {
+            "movie_id": 1,
+            "title": "Movie 1",
+            "genres": "Drama",
+            "avg_rating": 4.5,
+            "total_ratings": 100,
+            "confidence_score": 4.63,
+        },
     ]
 
 
@@ -739,6 +769,7 @@ def test_movie_detail_response(monkeypatch):
         "genres": "Drama",
         "avg_rating": 4.23,
         "total_ratings": 100,
+        "confidence_score": 4.37,
     }
 
 
@@ -780,6 +811,7 @@ def test_movie_search_response(monkeypatch):
             "genres": "Action",
             "avg_rating": 4.8,
             "total_ratings": 80,
+            "confidence_score": 4.76,
         },
         {
             "movie_id": 1,
@@ -787,6 +819,7 @@ def test_movie_search_response(monkeypatch):
             "genres": "Drama",
             "avg_rating": 4.4,
             "total_ratings": 100,
+            "confidence_score": 4.58,
         },
     ]
 
@@ -812,6 +845,7 @@ def test_movie_search_allows_empty_query(monkeypatch):
             "genres": "Action",
             "avg_rating": 4.9,
             "total_ratings": 80,
+            "confidence_score": 4.78,
         },
         {
             "movie_id": 3,
@@ -819,6 +853,7 @@ def test_movie_search_allows_empty_query(monkeypatch):
             "genres": "Drama",
             "avg_rating": 4.8,
             "total_ratings": 120,
+            "confidence_score": 4.75,
         },
     ]
 
@@ -844,6 +879,7 @@ def test_movie_search_filters_by_genre_and_rating(monkeypatch):
             "genres": "Drama",
             "avg_rating": 4.8,
             "total_ratings": 120,
+            "confidence_score": 4.75,
         },
     ]
 
