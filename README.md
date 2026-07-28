@@ -183,8 +183,8 @@ The demo UI also reports primary-genre coverage for each recommendation batch.
 | GET | `/model/info` | Model card summary with RMSE, data volume, score policy, and artifact size |
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
-| GET | `/movies/top` | Top-rated movies fallback ranking, optionally filtered by genre |
-| GET | `/movies/search` | Search movies with genre/rating filters and rating, popularity, or title sorting |
+| GET | `/movies/top` | Confidence-weighted top movies, optionally filtered by genre |
+| GET | `/movies/search` | Search movies with filters and confidence-aware rating, popularity, or title sorting |
 | GET | `/movies/{movie_id}` | Movie catalog detail for recommendation debugging |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |

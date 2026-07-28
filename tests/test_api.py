@@ -651,6 +651,23 @@ def test_top_movies_response(monkeypatch):
     ]
 
 
+def test_top_movies_downweights_tiny_rating_samples(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Perfect Sample", "Trusted Classic", "Catalog Baseline"],
+        "genres": ["Drama", "Drama", "Comedy"],
+        "avg_rating": [5.0, 4.6, 3.0],
+        "total_ratings": [1, 1000, 100],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/top?n=3")
+
+    assert response.status_code == 200
+    assert response.json()[0]["movie_id"] == 2
+
+
 def test_top_movies_filters_by_genre(monkeypatch):
     movie_features = pd.DataFrame({
         "movieId": [1, 2, 3],
@@ -846,6 +863,23 @@ def test_movie_search_sorts_by_popularity(monkeypatch):
 
     assert response.status_code == 200
     assert [movie["movie_id"] for movie in response.json()] == [2, 3, 1]
+
+
+def test_movie_search_rating_sort_uses_confidence(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Perfect Sample", "Trusted Classic", "Catalog Baseline"],
+        "genres": ["Drama", "Drama", "Comedy"],
+        "avg_rating": [5.0, 4.6, 3.0],
+        "total_ratings": [1, 1000, 100],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/search?sort_by=rating&n=3")
+
+    assert response.status_code == 200
+    assert response.json()[0]["movie_id"] == 2
 
 
 def test_user_profile_response(monkeypatch):

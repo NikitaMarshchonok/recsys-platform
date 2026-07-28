@@ -167,8 +167,31 @@ def load_model_card():
         return json.load(file)
 
 
+def rank_movies_by_confidence(movie_features: pd.DataFrame) -> pd.DataFrame:
+    ranked = movie_features.copy()
+    if ranked.empty:
+        ranked["_ranking_score"] = pd.Series(dtype=float)
+        return ranked
+
+    catalog_rating = float(ranked["avg_rating"].mean())
+    confidence_votes = max(
+        float(ranked["total_ratings"].quantile(0.90)),
+        1.0,
+    )
+    votes = ranked["total_ratings"].astype(float)
+
+    # Bayesian shrinkage keeps tiny rating samples close to the catalog average.
+    ranked["_ranking_score"] = (
+        (votes / (votes + confidence_votes)) * ranked["avg_rating"]
+        + (confidence_votes / (votes + confidence_votes)) * catalog_rating
+    )
+    return ranked
+
+
 def select_top_movies(n: int, genre: str | None = None):
-    movie_features = pd.read_csv(settings.movie_features_path)
+    movie_features = rank_movies_by_confidence(
+        pd.read_csv(settings.movie_features_path)
+    )
 
     if genre is not None:
         movie_features = movie_features[
@@ -176,8 +199,8 @@ def select_top_movies(n: int, genre: str | None = None):
         ]
 
     return movie_features.sort_values(
-        ["avg_rating", "total_ratings"],
-        ascending=[False, False],
+        ["_ranking_score", "total_ratings", "title"],
+        ascending=[False, False, True],
     ).head(n)
 
 
@@ -1024,7 +1047,9 @@ def search_movies(
     min_rating: float | None = Query(default=None, ge=0, le=5),
     sort_by: Literal["rating", "popularity", "title"] = Query(default="rating"),
 ):
-    movie_features = pd.read_csv(settings.movie_features_path)
+    movie_features = rank_movies_by_confidence(
+        pd.read_csv(settings.movie_features_path)
+    )
 
     query = q.strip()
     matches = movie_features
@@ -1041,7 +1066,10 @@ def search_movies(
         matches = matches[matches["avg_rating"] >= min_rating]
 
     sort_options = {
-        "rating": (["avg_rating", "total_ratings", "title"], [False, False, True]),
+        "rating": (
+            ["_ranking_score", "total_ratings", "title"],
+            [False, False, True],
+        ),
         "popularity": (
             ["total_ratings", "avg_rating", "title"],
             [False, False, True],
