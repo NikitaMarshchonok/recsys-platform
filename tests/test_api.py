@@ -179,6 +179,9 @@ def test_web_app_response():
     assert 'id="sort-by"' in response.text
     assert "Most popular" in response.text
     assert 'params.set("sort_by"' in response.text
+    assert "restoreSearchFromUrl" in response.text
+    assert "syncSearchUrl" in response.text
+    assert "window.history.replaceState" in response.text
     assert "confidence_score" in response.text
     assert "confidence ${formatRating" in response.text
     assert "from user history" in response.text

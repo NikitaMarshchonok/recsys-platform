@@ -867,6 +867,50 @@
       });
     }
 
+    function restoreSearchFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const savedMinRating = Number(params.get("min_rating"));
+      const savedLimit = Number(params.get("n"));
+      const savedSort = params.get("sort_by");
+      const savedGenre = params.get("genre");
+
+      queryInput.value = params.get("q") || "";
+      if (savedGenre) {
+        genreSelect.value = savedGenre;
+      }
+      if (
+        params.has("min_rating")
+        && Number.isFinite(savedMinRating)
+        && savedMinRating >= 0
+        && savedMinRating <= 5
+      ) {
+        minRatingInput.value = params.get("min_rating");
+      }
+      if (["rating", "popularity", "title"].includes(savedSort)) {
+        sortBySelect.value = savedSort;
+      }
+      if (Number.isInteger(savedLimit) && savedLimit >= 1 && savedLimit <= 50) {
+        limitInput.value = String(savedLimit);
+      }
+    }
+
+    function syncSearchUrl(params) {
+      const visibleParams = new URLSearchParams(params);
+      if (Number(visibleParams.get("n")) === 8) {
+        visibleParams.delete("n");
+      }
+      if (visibleParams.get("sort_by") === "rating") {
+        visibleParams.delete("sort_by");
+      }
+      if (Number(visibleParams.get("min_rating")) === 3) {
+        visibleParams.delete("min_rating");
+      }
+
+      const nextUrl = new URL(window.location.href);
+      nextUrl.search = visibleParams.toString();
+      window.history.replaceState({}, "", `${nextUrl.pathname}${nextUrl.search}`);
+    }
+
     function resetSearchFilters() {
       queryInput.value = "";
       genreSelect.value = "";
@@ -894,6 +938,8 @@
       if (minRatingInput.value !== "") {
         params.set("min_rating", minRatingInput.value);
       }
+
+      syncSearchUrl(params);
 
       searchButton.disabled = true;
       setStatus("Searching...");
@@ -1183,6 +1229,7 @@
         renderModelInfo(modelInfo);
         renderFeedbackSummary(feedbackSummary);
         renderTopMovies(topMovies);
+        restoreSearchFromUrl();
         await searchMovies();
       } catch (error) {
         setStatus(error.message, true);
