@@ -176,6 +176,10 @@ def test_web_app_response():
     assert 'aria-pressed="true">Top rated' in response.text
     assert "reset-search-button" in response.text
     assert "Reset filters" in response.text
+    assert "copy-search-link-button" in response.text
+    assert "navigator.clipboard.writeText" in response.text
+    assert 'document.execCommand("copy")' in response.text
+    assert 'textContent = "Copied"' in response.text
     assert 'id="sort-by"' in response.text
     assert "Most popular" in response.text
     assert 'params.set("sort_by"' in response.text

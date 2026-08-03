@@ -454,6 +454,7 @@
             <button class="chip-button" type="button" data-search-query="River" aria-pressed="false">River</button>
             <button class="chip-button" type="button" data-search-query="Storm" aria-pressed="false">Storm</button>
             <button id="reset-search-button" class="chip-button" type="button">Reset filters</button>
+            <button id="copy-search-link-button" class="chip-button" type="button">Copy link</button>
           </div>
 
           <p id="search-status" class="status">Loading top catalog matches...</p>
@@ -592,6 +593,7 @@
     const sortBySelect = document.querySelector("#sort-by");
     const limitInput = document.querySelector("#limit");
     const searchButton = document.querySelector("#search-button");
+    const copySearchLinkButton = document.querySelector("#copy-search-link-button");
     const statusEl = document.querySelector("#search-status");
     const resultsEl = document.querySelector("#results");
     const summaryEl = document.querySelector("#summary");
@@ -918,6 +920,43 @@
       sortBySelect.value = "rating";
       limitInput.value = "8";
       searchMovies();
+    }
+
+    async function writeTextToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (error) {
+        const temporaryInput = document.createElement("textarea");
+        temporaryInput.value = text;
+        temporaryInput.setAttribute("readonly", "");
+        temporaryInput.style.position = "fixed";
+        temporaryInput.style.opacity = "0";
+        document.body.appendChild(temporaryInput);
+        temporaryInput.select();
+
+        const copied = document.execCommand("copy");
+        temporaryInput.remove();
+        if (!copied) {
+          throw error;
+        }
+      }
+    }
+
+    async function copySearchLink() {
+      copySearchLinkButton.disabled = true;
+
+      try {
+        await writeTextToClipboard(window.location.href);
+        copySearchLinkButton.textContent = "Copied";
+        window.setTimeout(() => {
+          copySearchLinkButton.textContent = "Copy link";
+        }, 1400);
+      } catch (error) {
+        setStatus("Could not copy the search link.", true);
+      } finally {
+        copySearchLinkButton.disabled = false;
+      }
     }
 
     async function searchMovies() {
@@ -1262,6 +1301,12 @@
     });
 
     document.addEventListener("click", (event) => {
+      const copyLinkButton = event.target.closest("#copy-search-link-button");
+      if (copyLinkButton) {
+        copySearchLink();
+        return;
+      }
+
       const resetButton = event.target.closest("#reset-search-button");
       if (resetButton) {
         resetSearchFilters();
