@@ -746,6 +746,18 @@
       }
 
       resultsEl.innerHTML = movies.map(movieCard).join("");
+      const normalizedQuery = query.trim().toLowerCase();
+      const hasExactTitleMatch = movies.some((movie) =>
+        movie.title.toLowerCase().includes(normalizedQuery)
+      );
+      if (normalizedQuery && !hasExactTitleMatch) {
+        const matchLabel = movies.length === 1 ? "match" : "matches";
+        setStatus(
+          `No exact title match for "${query}". Showing ${movies.length} close ${matchLabel}.`
+        );
+        return;
+      }
+
       const searchLabel = query ? ` for "${query}"` : "";
       setStatus(`${movies.length} movies found${searchLabel}.`);
     }
