@@ -185,7 +185,7 @@ Catalog search filters are preserved in the URL and can be copied as a shareable
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Confidence-weighted top movies with an explainable ranking score |
-| GET | `/movies/search` | Search movies with filters, sorting, and confidence scores |
+| GET | `/movies/search` | Typo-tolerant movie search with filters, sorting, and confidence scores |
 | GET | `/movies/{movie_id}` | Movie catalog detail for recommendation debugging |
 | GET | `/users/{user_id}/profile` | User rating profile for recommendation debugging |
 | GET | `/users/{user_id}/history` | Recent user rating history with movie metadata |

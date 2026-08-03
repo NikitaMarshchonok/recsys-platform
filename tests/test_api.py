@@ -831,6 +831,27 @@ def test_movie_search_response(monkeypatch):
     ]
 
 
+def test_movie_search_falls_back_to_fuzzy_title_matching(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": [
+            "Shawshank Redemption, The (1994)",
+            "Shallow Grave (1994)",
+            "Godfather, The (1972)",
+        ],
+        "genres": ["Crime, Drama", "Thriller", "Crime, Drama"],
+        "avg_rating": [4.45, 3.7, 4.36],
+        "total_ratings": [63366, 5000, 41355],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/search?q=shawshenk&n=5")
+
+    assert response.status_code == 200
+    assert [movie["movie_id"] for movie in response.json()] == [1]
+
+
 def test_movie_search_allows_empty_query(monkeypatch):
     movie_features = pd.DataFrame({
         "movieId": [1, 2, 3],

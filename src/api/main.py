@@ -1,12 +1,15 @@
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, RedirectResponse
-from pydantic import BaseModel, Field
+from difflib import SequenceMatcher
 import json
 import logging
-import pandas as pd
+import re
 import time
 from typing import Literal
 import uuid
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, RedirectResponse
+import pandas as pd
+from pydantic import BaseModel, Field
 
 from src.api.config import get_settings
 
@@ -186,6 +189,19 @@ def rank_movies_by_confidence(movie_features: pd.DataFrame) -> pd.DataFrame:
         + (confidence_votes / (votes + confidence_votes)) * catalog_rating
     )
     return ranked
+
+
+def fuzzy_title_score(query: str, title: str) -> float:
+    normalized_query = " ".join(re.findall(r"\w+", query.casefold()))
+    normalized_title = " ".join(re.findall(r"\w+", str(title).casefold()))
+    if not normalized_query or not normalized_title:
+        return 0.0
+
+    title_candidates = [normalized_title, *normalized_title.split()]
+    return max(
+        SequenceMatcher(None, normalized_query, candidate).ratio()
+        for candidate in title_candidates
+    )
 
 
 def select_top_movies(n: int, genre: str | None = None):
@@ -1056,11 +1072,22 @@ def search_movies(
 
     query = q.strip()
     matches = movie_features
+    fuzzy_match = False
 
     if query:
-        matches = matches[
+        exact_matches = matches[
             matches["title"].str.contains(query, case=False, na=False)
         ]
+        if exact_matches.empty and len(query) >= 4:
+            matches = matches.assign(
+                _search_score=matches["title"].map(
+                    lambda title: fuzzy_title_score(query, title)
+                )
+            )
+            matches = matches[matches["_search_score"] >= 0.78]
+            fuzzy_match = True
+        else:
+            matches = exact_matches
 
     if genre is not None:
         matches = matches[matches["genres"].str.lower() == genre.lower()]
@@ -1080,6 +1107,9 @@ def search_movies(
         "title": (["title"], [True]),
     }
     sort_columns, sort_order = sort_options[sort_by]
+    if fuzzy_match:
+        sort_columns = ["_search_score", *sort_columns]
+        sort_order = [False, *sort_order]
     matches = matches.sort_values(sort_columns, ascending=sort_order).head(n)
 
     return [
