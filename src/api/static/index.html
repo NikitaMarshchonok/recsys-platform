@@ -628,6 +628,8 @@
     const similarButton = document.querySelector("#similar-button");
     const similarStatusEl = document.querySelector("#similar-status");
     const similarMoviesEl = document.querySelector("#similar-movies");
+    let searchDebounceTimer;
+    let searchRequestController;
 
     function setStatus(message, isError = false) {
       statusEl.textContent = message;
@@ -654,8 +656,8 @@
       movieDetailStatusEl.classList.toggle("error", isError);
     }
 
-    async function getJson(url) {
-      const response = await fetch(url);
+    async function getJson(url, options = {}) {
+      const response = await fetch(url, options);
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);
       }
@@ -972,6 +974,11 @@
     }
 
     async function searchMovies() {
+      window.clearTimeout(searchDebounceTimer);
+      searchRequestController?.abort();
+      const requestController = new AbortController();
+      searchRequestController = requestController;
+
       const params = new URLSearchParams();
       const query = queryInput.value.trim();
       setActiveSearchChip(query);
@@ -996,13 +1003,21 @@
       setStatus("Searching...");
 
       try {
-        const movies = await getJson(`/movies/search?${params.toString()}`);
+        const movies = await getJson(`/movies/search?${params.toString()}`, {
+          signal: requestController.signal,
+        });
         renderMovies(movies, query);
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
         resultsEl.innerHTML = "";
         setStatus(error.message, true);
       } finally {
-        searchButton.disabled = false;
+        if (searchRequestController === requestController) {
+          searchRequestController = undefined;
+          searchButton.disabled = false;
+        }
       }
     }
 
@@ -1290,6 +1305,11 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       searchMovies();
+    });
+
+    queryInput.addEventListener("input", () => {
+      window.clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = window.setTimeout(searchMovies, 350);
     });
 
     movieDetailForm.addEventListener("submit", (event) => {
