@@ -1,19 +1,32 @@
 # RecSys Platform
 
-Educational MLOps project for a movie recommendation system.
+End-to-end MLOps portfolio project for personalized movie recommendations.
 
-The project demonstrates a full recommendation workflow: data generation,
-Spark feature engineering, ALS model training, experiment tracking, API
-serving, request logging, orchestration, and automated tests.
+The current demo uses the MovieLens 20M dataset and covers the full
+recommendation workflow: data ingestion, Spark feature engineering, ALS model
+training, experiment tracking, API serving, user feedback, orchestration, and
+automated tests.
+
+## Portfolio Highlights
+
+- 20,000,263 ratings from 138,493 users across a catalog of 27,278 movies
+- PySpark ALS model with a holdout RMSE of 0.8608
+- FastAPI service with personalized, diverse, explainable, and cold-start
+  recommendations
+- Typo-tolerant catalog search with confidence-aware ranking and live filtering
+- Recommendation feedback signals, request tracing, health checks, and metrics
+- Docker Compose, MLflow, Airflow, PostgreSQL, and GitHub Actions CI
 
 ## Architecture
 
 ```text
-Raw Data
+MovieLens / Generated Data
   -> Spark Feature Engineering
   -> ALS Model Training
+  -> Model Artifacts
   -> FastAPI Recommendation Service
-  -> PostgreSQL Request Logging
+       -> Browser Demo UI
+       -> PostgreSQL Request Logging
 
 MLflow tracks training parameters and metrics.
 Airflow can orchestrate the feature and training pipeline.
@@ -35,7 +48,7 @@ Airflow can orchestrate the feature and training pipeline.
 ```text
 recsys-platform/
 ├── data/
-│   ├── raw/          # generated movie, user, and rating data
+│   ├── raw/          # imported or generated movie, user, and rating data
 │   └── processed/    # feature engineering outputs
 ├── spark/jobs/       # Spark feature engineering pipeline
 ├── src/
@@ -342,26 +355,35 @@ password: admin
 - The API Docker image includes a container healthcheck against `/health`.
 - Every API response includes `X-Request-ID` and `X-Response-Time-ms` headers for tracing.
 - PostgreSQL logging is optional: the API still works if the database is not running.
-- Fast API tests mock the ML resources, so they run quickly without starting Spark.
+- FastAPI tests mock the ML resources, so they run quickly without starting Spark.
 - The full ML workflow is covered by the data generation, feature engineering, and training scripts.
 
 ## Current Results
 
-- Synthetic dataset: 500 users, 200 movies, about 18k ratings after duplicate removal
-- Latest local ALS RMSE: 1.4285
-- ALS model saved to `models/als_model`
-- API tests: 30 passing tests for root, web UI, health, version, readiness, metrics, tracing, catalog summary, stats, recommendations, cold-start fallback, movie detail, movie search, movie genres, top movies, genre-filtered rankings, similar movies, user profiles, user rating history, OpenAPI schemas, OpenAPI examples, invalid users, and request validation
+- Dataset: MovieLens 20M with 20,000,263 ratings, 138,493 users, and 27,278
+  catalog movies
+- Processed recommendation catalog: 26,744 rated movies
+- Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
+- Latest local ALS holdout RMSE: 0.8608
+- Model artifacts and a machine-readable model card saved to `models/als_model`
+- Test suite: 57 passing tests covering API contracts, ranking behavior,
+  feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status
 
 Implemented:
 
 - Synthetic data generation
+- Real MovieLens import workflow and catalog titles
 - Spark feature engineering
 - ALS model training
 - MLflow experiment tracking
+- Machine-readable model card with training metadata and RMSE
 - FastAPI recommendation serving
 - Browser demo UI
+- Confidence-aware catalog ranking and typo-tolerant live search
+- Explainable recommendations with diversity re-ranking and cold-start fallback
+- Persistent like/dislike recommendation feedback signals
 - Request tracing and latency headers
 - Health and readiness checks
 - PostgreSQL request logging
