@@ -54,6 +54,6 @@ jobs:
         run: python spark/jobs/feature_engineering.py
 
       - name: Train model
-        run: python src/training/train.py
+        run: python -m src.training.train
         env:
           MLFLOW_TRACKING_URI: "file:./mlruns"

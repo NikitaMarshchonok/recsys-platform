@@ -107,7 +107,7 @@ python spark/jobs/feature_engineering.py
 Train the ALS model:
 
 ```bash
-MLFLOW_TRACKING_URI=file:./mlruns python src/training/train.py
+MLFLOW_TRACKING_URI=file:./mlruns python -m src.training.train
 ```
 
 Training writes the Spark model and a compact `models/als_model/model_card.json`

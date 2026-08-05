@@ -38,7 +38,7 @@ features:
 	JAVA_HOME=$(JAVA_HOME) $(PYTHON) spark/jobs/feature_engineering.py
 
 train:
-	JAVA_HOME=$(JAVA_HOME) MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) src/training/train.py
+	JAVA_HOME=$(JAVA_HOME) MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) -m src.training.train
 
 pipeline: generate-data features train
 

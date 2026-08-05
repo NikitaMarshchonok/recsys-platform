@@ -42,9 +42,10 @@ def recsys_pipeline():
         import subprocess
         import os
         result = subprocess.run(
-            ["python", "/opt/airflow/src/training/train.py"],
+            ["python", "-m", "src.training.train"],
             capture_output=True,
             text=True,
+            cwd="/opt/airflow",
             env={**os.environ, "MLFLOW_TRACKING_URI": "http://host.docker.internal:5001"},
         )
         print(result.stdout)

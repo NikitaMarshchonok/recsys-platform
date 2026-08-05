@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 import json
 import os
 
+from src.evaluation.spark_metrics import evaluate_ranking_predictions
+
 
 # Spark сессия
 spark = SparkSession.builder \
@@ -49,12 +51,16 @@ print(f"Test: {test_count} записей")
 rank = 10        # размерность скрытых факторов
 max_iter = 10    # количество итераций
 reg_param = 0.1  # регуляризация (защита от переобучения)
+ranking_k = 10
+relevance_threshold = 4.0
 
 with mlflow.start_run():
     # Записываем параметры
     mlflow.log_param("rank", rank)
     mlflow.log_param("max_iter", max_iter)
     mlflow.log_param("reg_param", reg_param)
+    mlflow.log_param("ranking_k", ranking_k)
+    mlflow.log_param("relevance_threshold", relevance_threshold)
 
     # Создаём и обучаем ALS модель
     als = ALS(
@@ -80,10 +86,37 @@ with mlflow.start_run():
     )
     rmse = evaluator.evaluate(predictions)
 
-    # Записываем метрику
+    ranking_metrics = evaluate_ranking_predictions(
+        predictions,
+        test,
+        k=ranking_k,
+        relevance_threshold=relevance_threshold,
+    )
+
+    # Записываем метрики
     mlflow.log_metric("rmse", rmse)
+    mlflow.log_metric(
+        f"precision_at_{ranking_k}",
+        ranking_metrics["precision_at_k"],
+    )
+    mlflow.log_metric(
+        f"recall_at_{ranking_k}",
+        ranking_metrics["recall_at_k"],
+    )
+    mlflow.log_metric(
+        "ranking_evaluated_users",
+        ranking_metrics["evaluated_users"],
+    )
 
     print(f"RMSE: {rmse:.4f}")
+    print(
+        f"Precision@{ranking_k}: "
+        f"{ranking_metrics['precision_at_k']:.4f}"
+    )
+    print(
+        f"Recall@{ranking_k}: "
+        f"{ranking_metrics['recall_at_k']:.4f}"
+    )
     print("Эксперимент записан в MLflow!")
 
     # Сохраняем модель на диск
@@ -102,6 +135,12 @@ with mlflow.start_run():
             "predicted_rating": "clipped to the user-facing 0-5 rating scale",
             "raw_predicted_rating": "unbounded ALS model output",
         },
+        "ranking_evaluation": {
+            "k": ranking_k,
+            "relevance_threshold": relevance_threshold,
+            "candidate_policy": "observed test interactions ranked by prediction",
+            "evaluated_users": ranking_metrics["evaluated_users"],
+        },
         "training": {
             "sample_fraction": 0.2,
             "seed": 42,
@@ -119,6 +158,14 @@ with mlflow.start_run():
         },
         "metrics": {
             "rmse": round(float(rmse), 4),
+            f"precision_at_{ranking_k}": round(
+                float(ranking_metrics["precision_at_k"]),
+                4,
+            ),
+            f"recall_at_{ranking_k}": round(
+                float(ranking_metrics["recall_at_k"]),
+                4,
+            ),
         },
     }
     with open(os.path.join(model_path, "model_card.json"), "w", encoding="utf-8") as file:
