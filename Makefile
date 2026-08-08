@@ -7,11 +7,12 @@ MOVIELENS_MOVIES_FILE ?=
 MOVIELENS_RATINGS_FILE ?=
 RAW_DATA_DIR ?= data/raw
 
-.PHONY: help install test generate-data import-movielens features train pipeline run-api docker-up docker-down
+.PHONY: help install lint test generate-data import-movielens features train pipeline run-api docker-up docker-down
 
 help:
 	@echo "Available commands:"
 	@echo "  make install        Install Python dependencies"
+	@echo "  make lint           Run Python lint checks"
 	@echo "  make test           Run fast API tests"
 	@echo "  make generate-data  Generate synthetic ratings data"
 	@echo "  make import-movielens Import MovieLens CSV files into data/raw"
@@ -24,6 +25,9 @@ help:
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
+
+lint:
+	$(PYTHON) -m ruff check .
 
 test:
 	$(PYTHON) -m pytest tests/ -v -p no:cacheprovider

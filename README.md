@@ -41,6 +41,7 @@ Airflow can orchestrate the feature and training pipeline.
 - Airflow - scheduled training pipeline
 - Docker Compose - local infrastructure
 - pytest - automated API tests
+- Ruff - Python lint checks
 - GitHub Actions - fast API tests and ML pipeline smoke checks
 
 ## Project Structure
@@ -129,6 +130,7 @@ Common commands are also available through `make`:
 
 ```bash
 make test
+make lint
 make import-movielens
 make pipeline
 make run-api

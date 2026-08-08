@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import(
-    count, mean, stddev, min, max, col
+    count, mean, stddev, min, max
 
 )
 import os

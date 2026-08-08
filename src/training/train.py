@@ -3,7 +3,6 @@ import mlflow.spark
 from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.sql.functions import col
 from datetime import datetime, timezone
 import json
 import os

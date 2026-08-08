@@ -1,7 +1,5 @@
 from datetime import timedelta
 import pendulum
-import subprocess
-import os
 from airflow.decorators import dag, task
 
 default_args = {
