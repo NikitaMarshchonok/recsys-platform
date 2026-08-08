@@ -691,6 +691,9 @@ class ModelInfoResponse(BaseModel):
     model_card_available: bool
     model_size_mb: float
     rmse: float | None
+    ranking_k: int | None
+    precision_at_k: float | None
+    recall_at_k: float | None
     sample_fraction: float | None
     train_ratings: int | None
     test_ratings: int | None
@@ -769,10 +772,22 @@ def model_info():
     card = load_model_card()
     training = card.get("training", {})
     metrics = card.get("metrics", {})
+    ranking_evaluation = card.get("ranking_evaluation", {})
     rating_scale = card.get("rating_scale", {})
     score_policy = card.get("score_policy", {})
     raw_score_policy = score_policy.get("raw_predicted_rating", "unbounded model output")
     predicted_score_policy = score_policy.get("predicted_rating", "user-facing score")
+    ranking_k = ranking_evaluation.get("k")
+    precision_at_k = (
+        metrics.get(f"precision_at_{ranking_k}")
+        if ranking_k is not None
+        else None
+    )
+    recall_at_k = (
+        metrics.get(f"recall_at_{ranking_k}")
+        if ranking_k is not None
+        else None
+    )
 
     return {
         "model_name": card.get("model_name", "ALS recommender"),
@@ -782,6 +797,9 @@ def model_info():
         "model_card_available": bool(card),
         "model_size_mb": round(directory_size_bytes(settings.model_path) / 1024 / 1024, 2),
         "rmse": metrics.get("rmse"),
+        "ranking_k": ranking_k,
+        "precision_at_k": precision_at_k,
+        "recall_at_k": recall_at_k,
         "sample_fraction": training.get("sample_fraction"),
         "train_ratings": training.get("train_ratings"),
         "test_ratings": training.get("test_ratings"),

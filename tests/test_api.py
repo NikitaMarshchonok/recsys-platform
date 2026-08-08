@@ -271,11 +271,36 @@ def test_model_info_response():
     assert data["model_exists"] is True
     assert data["model_card_available"] is True
     assert data["rmse"] == 0.8608
+    assert data["ranking_k"] is None
+    assert data["precision_at_k"] is None
+    assert data["recall_at_k"] is None
     assert data["train_ratings"] == 3202980
     assert data["rating_scale_min"] == 0.0
     assert data["rating_scale_max"] == 5.0
     assert data["model_size_mb"] > 0
     assert "raw_predicted_rating" in data["score_policy"]
+
+
+def test_model_info_exposes_ranking_metrics(monkeypatch):
+    monkeypatch.setattr(api_module, "load_model_card", lambda: {
+        "model_name": "ALS recommender",
+        "algorithm": "pyspark.ml.recommendation.ALS",
+        "dataset": "MovieLens ratings",
+        "ranking_evaluation": {"k": 10},
+        "metrics": {
+            "rmse": 0.8608,
+            "precision_at_10": 0.125,
+            "recall_at_10": 0.375,
+        },
+    })
+
+    response = client.get("/model/info")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ranking_k"] == 10
+    assert data["precision_at_k"] == 0.125
+    assert data["recall_at_k"] == 0.375
 
 
 def test_catalog_summary(monkeypatch):

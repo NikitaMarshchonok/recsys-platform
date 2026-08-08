@@ -194,7 +194,7 @@ Catalog search filters are preserved in the URL and can be copied as a shareable
 | GET | `/version` | Service name and API version |
 | GET | `/ready` | Readiness check for model and data artifacts |
 | GET | `/metrics` | Lightweight runtime cache metrics |
-| GET | `/model/info` | Model card summary with RMSE, data volume, score policy, and artifact size |
+| GET | `/model/info` | Model card summary with RMSE, ranking metrics, data volume, score policy, and artifact size |
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Confidence-weighted top movies with an explainable ranking score |
@@ -366,7 +366,7 @@ password: admin
 - Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
 - Latest local ALS holdout RMSE: 0.8608
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 57 passing tests covering API contracts, ranking behavior,
+- Test suite: 58 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status
