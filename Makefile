@@ -7,13 +7,14 @@ MOVIELENS_MOVIES_FILE ?=
 MOVIELENS_RATINGS_FILE ?=
 RAW_DATA_DIR ?= data/raw
 
-.PHONY: help install lint test generate-data import-movielens features train pipeline run-api docker-up docker-down
+.PHONY: help install lint test coverage generate-data import-movielens features train pipeline run-api docker-up docker-down
 
 help:
 	@echo "Available commands:"
 	@echo "  make install        Install Python dependencies"
 	@echo "  make lint           Run Python lint checks"
 	@echo "  make test           Run fast API tests"
+	@echo "  make coverage       Run tests with branch coverage"
 	@echo "  make generate-data  Generate synthetic ratings data"
 	@echo "  make import-movielens Import MovieLens CSV files into data/raw"
 	@echo "  make features       Run Spark feature engineering"
@@ -31,6 +32,9 @@ lint:
 
 test:
 	$(PYTHON) -m pytest tests/ -v -p no:cacheprovider
+
+coverage:
+	$(PYTHON) -m pytest tests/ -v -p no:cacheprovider --cov=src --cov-report=term-missing
 
 generate-data:
 	$(PYTHON) scripts/generate_data.py

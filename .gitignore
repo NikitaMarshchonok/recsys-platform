@@ -6,3 +6,6 @@ data/raw/
 mlruns/
 logs/
 *.egg-info/
+.coverage
+coverage.xml
+htmlcov/

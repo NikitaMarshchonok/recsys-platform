@@ -26,8 +26,8 @@ jobs:
       - name: Run lint checks
         run: python -m ruff check .
 
-      - name: Run fast API tests
-        run: python -m pytest tests/ -v
+      - name: Run tests with coverage
+        run: make coverage
 
   ml-pipeline-smoke:
     runs-on: ubuntu-latest

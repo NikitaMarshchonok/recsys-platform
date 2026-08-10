@@ -40,7 +40,7 @@ Airflow can orchestrate the feature and training pipeline.
 - PostgreSQL - request logging and API statistics
 - Airflow - scheduled training pipeline
 - Docker Compose - local infrastructure
-- pytest - automated API tests
+- pytest / pytest-cov - automated tests and branch coverage
 - Ruff - Python lint checks
 - GitHub Actions - fast API tests and ML pipeline smoke checks
 
@@ -130,6 +130,7 @@ Common commands are also available through `make`:
 
 ```bash
 make test
+make coverage
 make lint
 make import-movielens
 make pipeline
