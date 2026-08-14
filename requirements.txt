@@ -10,4 +10,4 @@ psycopg2-binary==2.9.11
 pytest==9.0.2
 pytest-cov==7.1.0
 httpx2==2.10.0
-ruff==0.16.0
+ruff==0.16.2
