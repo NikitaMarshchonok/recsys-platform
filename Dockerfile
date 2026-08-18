@@ -1,8 +1,11 @@
 FROM python:3.11-slim
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     default-jdk \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -10,7 +13,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+RUN useradd --create-home --uid 10001 --user-group appuser
+
+COPY --chown=appuser:appuser . .
+
+USER appuser
 
 EXPOSE 8001
 
