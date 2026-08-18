@@ -14,3 +14,9 @@ logs
 .DS_Store
 notebooks/.ipynb_checkpoints
 tests/.pytest_cache
+
+# Keep only the normalized MovieLens files used by the runtime API.
+data/raw/*
+!data/raw/movies.csv
+!data/raw/ratings.csv
+!data/raw/users.csv
