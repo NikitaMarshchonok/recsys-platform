@@ -453,6 +453,7 @@
             <button class="chip-button" type="button" data-search-query="Horizon" aria-pressed="false">Horizon</button>
             <button class="chip-button" type="button" data-search-query="River" aria-pressed="false">River</button>
             <button class="chip-button" type="button" data-search-query="Storm" aria-pressed="false">Storm</button>
+            <button id="surprise-movie-button" class="chip-button" type="button">Surprise me</button>
             <button id="reset-search-button" class="chip-button" type="button">Reset filters</button>
             <button id="copy-search-link-button" class="chip-button" type="button">Copy link</button>
           </div>
@@ -593,6 +594,7 @@
     const sortBySelect = document.querySelector("#sort-by");
     const limitInput = document.querySelector("#limit");
     const searchButton = document.querySelector("#search-button");
+    const surpriseMovieButton = document.querySelector("#surprise-movie-button");
     const copySearchLinkButton = document.querySelector("#copy-search-link-button");
     const statusEl = document.querySelector("#search-status");
     const resultsEl = document.querySelector("#results");
@@ -659,7 +661,8 @@
     async function getJson(url, options = {}) {
       const response = await fetch(url, options);
       if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Request failed: ${response.status}`);
       }
       return response.json();
     }
@@ -1021,6 +1024,32 @@
       }
     }
 
+    async function discoverMovie() {
+      const params = new URLSearchParams();
+      params.set("seed", String(Date.now() % 2147483647));
+
+      if (genreSelect.value) {
+        params.set("genre", genreSelect.value);
+      }
+      if (minRatingInput.value !== "") {
+        params.set("min_rating", minRatingInput.value);
+      }
+
+      surpriseMovieButton.disabled = true;
+      setStatus("Finding a surprise pick...");
+
+      try {
+        const movie = await getJson(`/movies/discover?${params.toString()}`);
+        resultsEl.innerHTML = movieCard(movie);
+        setStatus(`Surprise pick: ${movie.title}.`);
+      } catch (error) {
+        resultsEl.innerHTML = "";
+        setStatus(error.message, true);
+      } finally {
+        surpriseMovieButton.disabled = false;
+      }
+    }
+
     function inspectMovie(movieId) {
       detailMovieIdInput.value = movieId;
       similarMovieIdInput.value = movieId;
@@ -1349,6 +1378,12 @@
     });
 
     document.addEventListener("click", (event) => {
+      const surpriseButton = event.target.closest("#surprise-movie-button");
+      if (surpriseButton) {
+        discoverMovie();
+        return;
+      }
+
       const copyLinkButton = event.target.closest("#copy-search-link-button");
       if (copyLinkButton) {
         copySearchLink();

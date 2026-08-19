@@ -971,6 +971,51 @@ def test_movie_search_rating_sort_uses_confidence(monkeypatch):
     assert response.json()[0]["movie_id"] == 2
 
 
+def test_discover_movie_respects_quality_filters(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Small Drama", "Trusted Drama", "Popular Action"],
+        "genres": ["Drama", "Drama", "Action"],
+        "avg_rating": [4.9, 4.7, 4.8],
+        "total_ratings": [10, 250, 500],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get(
+        "/movies/discover?genre=Drama&min_rating=4.5&min_ratings=100&seed=7"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "movie_id": 2,
+        "title": "Trusted Drama",
+        "genres": "Drama",
+        "avg_rating": 4.7,
+        "total_ratings": 250,
+        "confidence_score": 4.76,
+    }
+
+
+def test_discover_movie_returns_not_found_for_empty_pool(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1],
+        "title": ["Small Drama"],
+        "genres": ["Drama"],
+        "avg_rating": [4.9],
+        "total_ratings": [10],
+    })
+
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+
+    response = client.get("/movies/discover?min_ratings=100")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Под текущие фильтры не найдено фильмов"
+    }
+
+
 def test_user_profile_response(monkeypatch):
     user_features = pd.DataFrame({
         "userId": [1, 2],

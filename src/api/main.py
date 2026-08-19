@@ -736,6 +736,43 @@ def search_movies(
     ]
 
 
+@app.get("/movies/discover", response_model=MovieDetailResponse)
+def discover_movie(
+    genre: str | None = Query(default=None, min_length=1),
+    min_rating: float = Query(default=4.0, ge=0, le=5),
+    min_ratings: int = Query(default=100, ge=1, le=1_000_000),
+    seed: int | None = Query(default=None, ge=0, le=2_147_483_647),
+):
+    movie_features = rank_movies_by_confidence(
+        pd.read_csv(settings.movie_features_path)
+    )
+    candidates = movie_features[
+        (movie_features["avg_rating"] >= min_rating)
+        & (movie_features["total_ratings"] >= min_ratings)
+    ]
+
+    if genre is not None:
+        candidates = candidates[
+            candidates["genres"].str.lower() == genre.lower()
+        ]
+
+    if candidates.empty:
+        raise HTTPException(
+            status_code=404,
+            detail="Под текущие фильтры не найдено фильмов",
+        )
+
+    row = candidates.sample(n=1, random_state=seed).iloc[0]
+    return {
+        "movie_id": int(row["movieId"]),
+        "title": row["title"],
+        "genres": row["genres"],
+        "avg_rating": round(float(row["avg_rating"]), 2),
+        "total_ratings": int(row["total_ratings"]),
+        "confidence_score": round(float(row["_ranking_score"]), 2),
+    }
+
+
 @app.get("/movies/{movie_id}", response_model=MovieDetailResponse)
 def movie_detail(movie_id: int):
     movie_features = rank_movies_by_confidence(
