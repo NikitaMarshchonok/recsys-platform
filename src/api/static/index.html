@@ -915,6 +915,10 @@
 
     function syncSearchUrl(params) {
       const visibleParams = new URLSearchParams(params);
+      const selectedMovieId = new URLSearchParams(window.location.search).get("movie_id");
+      if (selectedMovieId) {
+        visibleParams.set("movie_id", selectedMovieId);
+      }
       if (Number(visibleParams.get("n")) === 8) {
         visibleParams.delete("n");
       }
@@ -1050,11 +1054,28 @@
       }
     }
 
-    function inspectMovie(movieId) {
+    function syncMovieUrl(movieId) {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("movie_id", String(movieId));
+      window.history.replaceState({}, "", `${nextUrl.pathname}${nextUrl.search}`);
+    }
+
+    function inspectMovie(movieId, syncUrl = true) {
       detailMovieIdInput.value = movieId;
       similarMovieIdInput.value = movieId;
-      loadMovieDetail();
-      loadSimilarMovies();
+      if (syncUrl) {
+        syncMovieUrl(movieId);
+      }
+      return Promise.all([loadMovieDetail(), loadSimilarMovies()]);
+    }
+
+    function restoreMovieFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const movieId = Number(params.get("movie_id"));
+      if (!Number.isInteger(movieId) || movieId < 1) {
+        return Promise.resolve();
+      }
+      return inspectMovie(movieId, false);
     }
 
     async function loadMovieDetail() {
@@ -1342,6 +1363,7 @@
         renderTopMovies(topMovies);
         restoreSearchFromUrl();
         await searchMovies();
+        await restoreMovieFromUrl();
       } catch (error) {
         setStatus(error.message, true);
       }
@@ -1359,7 +1381,7 @@
 
     movieDetailForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      loadMovieDetail();
+      inspectMovie(Number(detailMovieIdInput.value || 1));
     });
 
     recommendationForm.addEventListener("submit", (event) => {
@@ -1374,7 +1396,7 @@
 
     similarForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      loadSimilarMovies();
+      inspectMovie(Number(similarMovieIdInput.value || 1));
     });
 
     document.addEventListener("click", (event) => {

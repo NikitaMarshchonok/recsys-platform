@@ -185,6 +185,9 @@ def test_web_app_response():
     assert 'params.set("sort_by"' in response.text
     assert "restoreSearchFromUrl" in response.text
     assert "syncSearchUrl" in response.text
+    assert "restoreMovieFromUrl" in response.text
+    assert "syncMovieUrl" in response.text
+    assert 'searchParams.set("movie_id"' in response.text
     assert "window.history.replaceState" in response.text
     assert "confidence_score" in response.text
     assert "confidence ${formatRating" in response.text
