@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 import pandas as pd
 from fastapi.testclient import TestClient
@@ -239,10 +241,57 @@ def test_security_headers():
     assert response.headers["Referrer-Policy"] == "same-origin"
 
 
-def test_readiness():
+def test_java_runtime_available_uses_java_home(monkeypatch, tmp_path):
+    java_executable = tmp_path / "bin" / "java"
+    java_executable.parent.mkdir()
+    java_executable.touch()
+    monkeypatch.setenv("JAVA_HOME", str(tmp_path))
+    monkeypatch.setattr(
+        api_module.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0),
+    )
+
+    assert api_module.java_runtime_available() is True
+
+
+def test_java_runtime_available_rejects_missing_executable(monkeypatch, tmp_path):
+    monkeypatch.setenv("JAVA_HOME", str(tmp_path))
+
+    assert api_module.java_runtime_available() is False
+
+
+def test_java_runtime_available_rejects_timeout(monkeypatch, tmp_path):
+    java_executable = tmp_path / "bin" / "java"
+    java_executable.parent.mkdir()
+    java_executable.touch()
+    monkeypatch.setenv("JAVA_HOME", str(tmp_path))
+
+    def timeout(*args, **kwargs):
+        raise api_module.subprocess.TimeoutExpired("java", 3)
+
+    monkeypatch.setattr(api_module.subprocess, "run", timeout)
+
+    assert api_module.java_runtime_available() is False
+
+
+def test_readiness(monkeypatch):
+    monkeypatch.setattr(api_module, "java_runtime_available", lambda: True)
+
     response = client.get("/ready")
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+    assert response.json()["checks"]["java_runtime"] is True
+
+
+def test_readiness_reports_missing_java(monkeypatch):
+    monkeypatch.setattr(api_module, "java_runtime_available", lambda: False)
+
+    response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["status"] == "not_ready"
+    assert response.json()["detail"]["checks"]["java_runtime"] is False
 
 
 def test_metrics(monkeypatch):
@@ -377,6 +426,28 @@ def test_recommend_valid_user():
         "ALS collaborative filtering match with genre-diversity re-ranking; "
         "primary genre: Drama."
     )
+
+
+def test_recommend_reports_unavailable_runtime(monkeypatch):
+    def unavailable_resources():
+        raise RuntimeError("Java runtime is unavailable")
+
+    monkeypatch.setattr(
+        api_module,
+        "load_recommendation_resources",
+        unavailable_resources,
+    )
+
+    response = client.post(
+        "/recommend",
+        json={"user_id": 1, "n_recommendations": 5},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Recommendation runtime is temporarily unavailable"
+    }
+    assert response.headers["Retry-After"] == "30"
 
 
 def test_recommend_openapi_example_uses_valid_user():

@@ -1,7 +1,11 @@
 from difflib import SequenceMatcher
 import json
 import logging
+import os
+from pathlib import Path
 import re
+import shutil
+import subprocess
 import time
 from typing import Literal
 import uuid
@@ -131,10 +135,37 @@ def init_db():
         print(f"PostgreSQL недоступен, логирование отключено: {e}")
 
 
+def java_runtime_available() -> bool:
+    java_home = os.getenv("JAVA_HOME")
+    java_executable = (
+        Path(java_home) / "bin" / "java"
+        if java_home
+        else Path(shutil.which("java") or "")
+    )
+    if not java_executable.is_file():
+        return False
+
+    try:
+        result = subprocess.run(
+            [str(java_executable), "-version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+    return result.returncode == 0
+
+
 def load_recommendation_resources():
     global spark, model
 
     if spark is None or model is None:
+        if not java_runtime_available():
+            raise RuntimeError("Java runtime is unavailable")
+
         from pyspark.sql import SparkSession
         from pyspark.ml.recommendation import ALSModel
 
@@ -330,6 +361,7 @@ def version():
 @app.get("/ready", response_model=ReadinessResponse)
 def readiness():
     checks = {
+        "java_runtime": java_runtime_available(),
         "model": settings.model_path.exists(),
         "model_card": settings.model_card_path.exists(),
         "movies": settings.movies_path.exists(),
@@ -469,41 +501,54 @@ def recommend(request: RecommendRequest):
         ]
         source = "fallback_top_diverse" if request.diversify else "fallback_top"
     else:
-        spark_session, als_model, movie_catalog, _ = load_recommendation_resources()
+        try:
+            spark_session, als_model, movie_catalog, _ = load_recommendation_resources()
 
-        user_df = spark_session.createDataFrame(
-            [(request.user_id,)],
-            ["userId"]
-        )
-
-        recs = als_model.recommendForUserSubset(
-            user_df,
-            candidate_count,
-        )
-
-        rows = recs.collect()
-        if not rows:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Для пользователя {request.user_id} нет рекомендаций"
+            user_df = spark_session.createDataFrame(
+                [(request.user_id,)],
+                ["userId"]
             )
 
-        recs_list = rows[0]["recommendations"]
+            recs = als_model.recommendForUserSubset(
+                user_df,
+                candidate_count,
+            )
 
-        movie_lookup = movie_catalog.set_index("movieId")
-        candidates = []
-        for rec in recs_list:
-            movie_id = int(rec["movieId"])
-            if movie_id not in movie_lookup.index:
-                continue
-            movie_info = movie_lookup.loc[movie_id]
-            candidates.append({
-                "movie_id": movie_id,
-                "title": movie_info["title"],
-                "genres": movie_info["genres"],
-                "rating": rec["rating"],
-            })
-        source = "als_diverse" if request.diversify else "als"
+            rows = recs.collect()
+            if not rows:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Для пользователя {request.user_id} нет рекомендаций"
+                )
+
+            recs_list = rows[0]["recommendations"]
+
+            movie_lookup = movie_catalog.set_index("movieId")
+            candidates = []
+            for rec in recs_list:
+                movie_id = int(rec["movieId"])
+                if movie_id not in movie_lookup.index:
+                    continue
+                movie_info = movie_lookup.loc[movie_id]
+                candidates.append({
+                    "movie_id": movie_id,
+                    "title": movie_info["title"],
+                    "genres": movie_info["genres"],
+                    "rating": rec["rating"],
+                })
+            source = "als_diverse" if request.diversify else "als"
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception(
+                "recommendation_runtime_unavailable user_id=%s",
+                request.user_id,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Recommendation runtime is temporarily unavailable",
+                headers={"Retry-After": "30"},
+            ) from exc
 
     if request.diversify:
         candidates = rerank_for_genre_diversity(

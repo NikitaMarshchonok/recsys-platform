@@ -356,7 +356,7 @@ password: admin
 ## Notes
 
 - The API loads Spark and the ALS model lazily when `/recommend` is called.
-- `/health` checks that the API process is alive; `/ready` checks that model and data artifacts exist.
+- `/health` checks that the API process is alive; `/ready` checks the Java runtime and required model and data artifacts.
 - The API Docker image includes a container healthcheck against `/health`.
 - Every API response includes `X-Request-ID` and `X-Response-Time-ms` headers for tracing.
 - PostgreSQL logging is optional: the API still works if the database is not running.
@@ -371,7 +371,7 @@ password: admin
 - Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
 - Latest local ALS holdout RMSE: 0.8608
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 58 passing tests covering API contracts, ranking behavior,
+- Test suite: 65 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status
