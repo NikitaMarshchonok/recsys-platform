@@ -712,20 +712,45 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
 
 def test_similar_movies_response_excludes_target(monkeypatch):
     movie_features = pd.DataFrame({
-        "movieId": [1, 2, 3, 4],
-        "title": ["Movie 1", "Movie 2", "Movie 3", "Movie 4"],
-        "genres": ["Drama", "Drama", "Comedy", "Drama"],
-        "avg_rating": [4.2, 4.8, 3.9, 4.4],
+        "movieId": [1, 2, 3, 4, 5],
+        "title": ["Movie 1", "Movie 2", "Movie 3", "Movie 4", "Movie 5"],
+        "genres": [
+            "Crime, Drama",
+            "Drama",
+            "Comedy",
+            "Crime, Drama, Thriller",
+            "Crime, Drama",
+        ],
+        "avg_rating": [4.2, 4.8, 3.9, 4.4, 4.0],
     })
 
     monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
 
-    response = client.get("/similar_movies/1?n=2")
+    response = client.get("/similar_movies/1?n=3")
 
     assert response.status_code == 200
     assert response.json() == [
-        {"movie_id": 2, "title": "Movie 2", "genres": "Drama", "avg_rating": 4.8},
-        {"movie_id": 4, "title": "Movie 4", "genres": "Drama", "avg_rating": 4.4},
+        {
+            "movie_id": 5,
+            "title": "Movie 5",
+            "genres": "Crime, Drama",
+            "avg_rating": 4.0,
+            "similarity_score": 1.0,
+        },
+        {
+            "movie_id": 4,
+            "title": "Movie 4",
+            "genres": "Crime, Drama, Thriller",
+            "avg_rating": 4.4,
+            "similarity_score": 0.667,
+        },
+        {
+            "movie_id": 2,
+            "title": "Movie 2",
+            "genres": "Drama",
+            "avg_rating": 4.8,
+            "similarity_score": 0.5,
+        },
     ]
 
 

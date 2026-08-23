@@ -274,6 +274,24 @@ def primary_genre(genres: str) -> str:
     return genre or "Unknown"
 
 
+def genre_overlap_score(source_genres: str, candidate_genres: str) -> float:
+    source = {
+        genre.strip().lower()
+        for genre in str(source_genres).split(",")
+        if genre.strip()
+    }
+    candidate = {
+        genre.strip().lower()
+        for genre in str(candidate_genres).split(",")
+        if genre.strip()
+    }
+    combined = source | candidate
+    if not combined:
+        return 0.0
+
+    return len(source & candidate) / len(combined)
+
+
 def recommendation_reason(genres: str, source: str) -> str:
     genre = primary_genre(genres)
     if source == "fallback_top_diverse":
@@ -651,15 +669,16 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
     if target.empty:
         raise HTTPException(status_code=404, detail=f"Фильм {movie_id} не найден")
     
-    # Находим жанр
-    genre = target.iloc[0]["genres"]
-    
-    # Похожие фильмы того же жанра
-    similar = movie_features[
-        (movie_features["genres"] == genre)
-        & (movie_features["movieId"] != movie_id)
-    ] \
-        .sort_values("avg_rating", ascending=False) \
+    target_genres = target.iloc[0]["genres"]
+    candidates = movie_features[movie_features["movieId"] != movie_id].copy()
+    candidates["_similarity_score"] = candidates["genres"].map(
+        lambda genres: genre_overlap_score(target_genres, genres)
+    )
+    similar = candidates[candidates["_similarity_score"] > 0] \
+        .sort_values(
+            ["_similarity_score", "avg_rating", "title"],
+            ascending=[False, False, True],
+        ) \
         .head(n)
     
     return [
@@ -668,6 +687,7 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
             "title": row["title"],
             "genres": row["genres"],
             "avg_rating": round(row["avg_rating"], 2),
+            "similarity_score": round(float(row["_similarity_score"]), 3),
         }
         for _, row in similar.iterrows()
     ]

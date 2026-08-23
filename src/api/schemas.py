@@ -119,6 +119,7 @@ class SimilarMovieResponse(BaseModel):
     title: str
     genres: str
     avg_rating: float
+    similarity_score: float = Field(ge=0, le=1)
 
 
 class TopMovieResponse(BaseModel):

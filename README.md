@@ -212,7 +212,7 @@ copied as a shareable link.
 | DELETE | `/recommend/feedback` | Remove a saved recommendation reaction |
 | GET | `/recommend/feedback/users/{user_id}` | Restore saved feedback state for recommendation cards |
 | GET | `/recommend/feedback/summary` | Aggregate overall and per-strategy feedback metrics |
-| GET | `/similar_movies/{movie_id}` | Similar movies by genre |
+| GET | `/similar_movies/{movie_id}` | Similar movies ranked by genre-overlap score |
 | GET | `/stats` | Request statistics from PostgreSQL |
 
 Example recommendation request:

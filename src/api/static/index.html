@@ -831,6 +831,7 @@
           <h3>${title}</h3>
           <div class="meta">
             <span class="pill">${genres}</span>
+            <span class="pill">similarity ${Math.round(movie.similarity_score * 100)}%</span>
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
