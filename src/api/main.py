@@ -655,7 +655,10 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
     genre = target.iloc[0]["genres"]
     
     # Похожие фильмы того же жанра
-    similar = movie_features[movie_features["genres"] == genre] \
+    similar = movie_features[
+        (movie_features["genres"] == genre)
+        & (movie_features["movieId"] != movie_id)
+    ] \
         .sort_values("avg_rating", ascending=False) \
         .head(n)
     

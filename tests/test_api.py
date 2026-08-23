@@ -710,12 +710,12 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
     ]
 
 
-def test_similar_movies_response(monkeypatch):
+def test_similar_movies_response_excludes_target(monkeypatch):
     movie_features = pd.DataFrame({
-        "movieId": [1, 2, 3],
-        "title": ["Movie 1", "Movie 2", "Movie 3"],
-        "genres": ["Drama", "Drama", "Comedy"],
-        "avg_rating": [4.2, 4.8, 3.9],
+        "movieId": [1, 2, 3, 4],
+        "title": ["Movie 1", "Movie 2", "Movie 3", "Movie 4"],
+        "genres": ["Drama", "Drama", "Comedy", "Drama"],
+        "avg_rating": [4.2, 4.8, 3.9, 4.4],
     })
 
     monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
@@ -725,7 +725,7 @@ def test_similar_movies_response(monkeypatch):
     assert response.status_code == 200
     assert response.json() == [
         {"movie_id": 2, "title": "Movie 2", "genres": "Drama", "avg_rating": 4.8},
-        {"movie_id": 1, "title": "Movie 1", "genres": "Drama", "avg_rating": 4.2},
+        {"movie_id": 4, "title": "Movie 4", "genres": "Drama", "avg_rating": 4.4},
     ]
 
 
