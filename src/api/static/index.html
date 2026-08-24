@@ -825,6 +825,7 @@
     function similarMovieCard(movie) {
       const title = escapeHtml(movie.title);
       const genres = escapeHtml(movie.genres);
+      const method = movie.similarity_method === "als_cosine" ? "ALS cosine" : "genre overlap";
 
       return `
         <article class="movie">
@@ -832,6 +833,7 @@
           <div class="meta">
             <span class="pill">${genres}</span>
             <span class="pill">similarity ${Math.round(movie.similarity_score * 100)}%</span>
+            <span class="pill">${method}</span>
             <span class="pill">rating ${movie.avg_rating}</span>
             <span class="pill">#${movie.movie_id}</span>
           </div>
@@ -848,7 +850,8 @@
       }
 
       similarMoviesEl.innerHTML = movies.map(similarMovieCard).join("");
-      setSimilarStatus(`${movies.length} similar movies returned.`);
+      const method = movies[0].similarity_method === "als_cosine" ? "ALS cosine" : "genre overlap";
+      setSimilarStatus(`${movies.length} similar movies returned using ${method}.`);
     }
 
     function renderMovieDetail(movie) {

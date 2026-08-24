@@ -6,12 +6,14 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import threading
 import time
 from typing import Literal
 import uuid
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, RedirectResponse
+import numpy as np
 import pandas as pd
 
 from src.api.config import get_settings
@@ -49,6 +51,8 @@ spark = None
 model = None
 movies = None
 valid_user_ids = None
+item_factor_index = None
+item_factor_lock = threading.Lock()
 
 # Создаём приложение
 app = FastAPI(
@@ -177,6 +181,69 @@ def load_recommendation_resources():
         model = ALSModel.load(str(settings.model_path))
 
     return spark, model, load_movie_catalog(), load_valid_user_ids()
+
+
+def load_item_factor_index():
+    global item_factor_index
+
+    if item_factor_index is None:
+        with item_factor_lock:
+            if item_factor_index is None:
+                _, als_model, _, _ = load_recommendation_resources()
+                rows = als_model.itemFactors.select("id", "features").collect()
+                if not rows:
+                    raise RuntimeError("ALS model has no item factors")
+
+                factor_ids = np.asarray(
+                    [int(row["id"]) for row in rows],
+                    dtype=np.int64,
+                )
+                factor_matrix = np.asarray(
+                    [row["features"] for row in rows],
+                    dtype=np.float32,
+                )
+                norms = np.linalg.norm(factor_matrix, axis=1, keepdims=True)
+                normalized = np.divide(
+                    factor_matrix,
+                    norms,
+                    out=np.zeros_like(factor_matrix),
+                    where=norms != 0,
+                )
+
+                positions = {
+                    int(factor_id): position
+                    for position, factor_id in enumerate(factor_ids)
+                }
+                item_factor_index = factor_ids, normalized, positions
+
+    return item_factor_index
+
+
+def rank_movies_by_als_similarity(
+    movie_id: int,
+    candidate_ids: set[int],
+    n: int,
+) -> list[tuple[int, float]]:
+    factor_ids, factor_matrix, positions = load_item_factor_index()
+    target_position = positions.get(movie_id)
+    if target_position is None:
+        return []
+
+    scores = factor_matrix @ factor_matrix[target_position]
+    ranked = []
+    for position in np.argsort(scores)[::-1]:
+        candidate_id = int(factor_ids[position])
+        score = float(scores[position])
+        if score <= 0:
+            break
+        if candidate_id == movie_id or candidate_id not in candidate_ids:
+            continue
+
+        ranked.append((candidate_id, min(1.0, score)))
+        if len(ranked) >= n:
+            break
+
+    return ranked
 
 
 def load_movie_catalog():
@@ -668,7 +735,39 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
     target = movie_features[movie_features["movieId"] == movie_id]
     if target.empty:
         raise HTTPException(status_code=404, detail=f"Фильм {movie_id} не найден")
-    
+
+    available_movie_ids = set(movie_features["movieId"].astype(int))
+    try:
+        als_matches = rank_movies_by_als_similarity(
+            movie_id,
+            available_movie_ids,
+            n,
+        )
+    except Exception as exc:
+        logger.info(
+            "als_similarity_unavailable movie_id=%s error=%s",
+            movie_id,
+            exc,
+        )
+        als_matches = []
+
+    if als_matches:
+        movie_lookup = movie_features.set_index("movieId")
+        return [
+            {
+                "movie_id": candidate_id,
+                "title": movie_lookup.loc[candidate_id, "title"],
+                "genres": movie_lookup.loc[candidate_id, "genres"],
+                "avg_rating": round(
+                    float(movie_lookup.loc[candidate_id, "avg_rating"]),
+                    2,
+                ),
+                "similarity_score": round(score, 3),
+                "similarity_method": "als_cosine",
+            }
+            for candidate_id, score in als_matches
+        ]
+
     target_genres = target.iloc[0]["genres"]
     candidates = movie_features[movie_features["movieId"] != movie_id].copy()
     candidates["_similarity_score"] = candidates["genres"].map(
@@ -688,6 +787,7 @@ def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
             "genres": row["genres"],
             "avg_rating": round(row["avg_rating"], 2),
             "similarity_score": round(float(row["_similarity_score"]), 3),
+            "similarity_method": "genre_overlap",
         }
         for _, row in similar.iterrows()
     ]

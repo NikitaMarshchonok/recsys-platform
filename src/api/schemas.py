@@ -120,6 +120,7 @@ class SimilarMovieResponse(BaseModel):
     genres: str
     avg_rating: float
     similarity_score: float = Field(ge=0, le=1)
+    similarity_method: Literal["als_cosine", "genre_overlap"]
 
 
 class TopMovieResponse(BaseModel):

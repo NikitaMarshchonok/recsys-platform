@@ -212,7 +212,7 @@ copied as a shareable link.
 | DELETE | `/recommend/feedback` | Remove a saved recommendation reaction |
 | GET | `/recommend/feedback/users/{user_id}` | Restore saved feedback state for recommendation cards |
 | GET | `/recommend/feedback/summary` | Aggregate overall and per-strategy feedback metrics |
-| GET | `/similar_movies/{movie_id}` | Similar movies ranked by genre-overlap score |
+| GET | `/similar_movies/{movie_id}` | Similar movies ranked by ALS cosine similarity with genre-overlap fallback |
 | GET | `/stats` | Request statistics from PostgreSQL |
 
 Example recommendation request:
@@ -371,7 +371,7 @@ password: admin
 - Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
 - Latest local ALS holdout RMSE: 0.8608
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 65 passing tests covering API contracts, ranking behavior,
+- Test suite: 68 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status

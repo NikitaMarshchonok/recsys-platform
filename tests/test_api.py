@@ -710,7 +710,102 @@ def test_recommend_unknown_user_can_fallback_to_top(monkeypatch):
     ]
 
 
-def test_similar_movies_response_excludes_target(monkeypatch):
+def test_load_item_factor_index_normalizes_and_caches(monkeypatch):
+    class FakeItemFactors:
+        def select(self, *columns):
+            return self
+
+        def collect(self):
+            return [
+                {"id": 1, "features": [3.0, 4.0]},
+                {"id": 2, "features": [0.0, 2.0]},
+            ]
+
+    class FakeFactorModel:
+        itemFactors = FakeItemFactors()
+
+    load_count = 0
+
+    def load_resources():
+        nonlocal load_count
+        load_count += 1
+        return None, FakeFactorModel(), None, None
+
+    monkeypatch.setattr(api_module, "item_factor_index", None)
+    monkeypatch.setattr(api_module, "load_recommendation_resources", load_resources)
+
+    factor_ids, factors, positions = api_module.load_item_factor_index()
+    api_module.load_item_factor_index()
+
+    assert factor_ids.tolist() == [1, 2]
+    assert api_module.np.allclose(factors, [[0.6, 0.8], [0.0, 1.0]])
+    assert positions == {1: 0, 2: 1}
+    assert load_count == 1
+
+
+def test_rank_movies_by_als_similarity_uses_cosine_order(monkeypatch):
+    monkeypatch.setattr(
+        api_module,
+        "load_item_factor_index",
+        lambda: (
+            api_module.np.asarray([1, 2, 3, 4]),
+            api_module.np.asarray([
+                [1.0, 0.0],
+                [0.8, 0.6],
+                [0.6, 0.8],
+                [-1.0, 0.0],
+            ]),
+            {1: 0, 2: 1, 3: 2, 4: 3},
+        ),
+    )
+
+    ranked = api_module.rank_movies_by_als_similarity(
+        movie_id=1,
+        candidate_ids={1, 2, 3, 4},
+        n=3,
+    )
+
+    assert ranked == pytest.approx([(2, 0.8), (3, 0.6)])
+
+
+def test_similar_movies_uses_als_cosine_ranking(monkeypatch):
+    movie_features = pd.DataFrame({
+        "movieId": [1, 2, 3],
+        "title": ["Movie 1", "Movie 2", "Movie 3"],
+        "genres": ["Crime, Drama", "Comedy", "Documentary"],
+        "avg_rating": [4.2, 4.8, 4.4],
+    })
+    monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+    monkeypatch.setattr(
+        api_module,
+        "rank_movies_by_als_similarity",
+        lambda movie_id, candidate_ids, n: [(3, 0.95), (2, 0.75)],
+    )
+
+    response = client.get("/similar_movies/1?n=2")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "movie_id": 3,
+            "title": "Movie 3",
+            "genres": "Documentary",
+            "avg_rating": 4.4,
+            "similarity_score": 0.95,
+            "similarity_method": "als_cosine",
+        },
+        {
+            "movie_id": 2,
+            "title": "Movie 2",
+            "genres": "Comedy",
+            "avg_rating": 4.8,
+            "similarity_score": 0.75,
+            "similarity_method": "als_cosine",
+        },
+    ]
+
+
+def test_similar_movies_falls_back_to_genre_overlap(monkeypatch):
     movie_features = pd.DataFrame({
         "movieId": [1, 2, 3, 4, 5],
         "title": ["Movie 1", "Movie 2", "Movie 3", "Movie 4", "Movie 5"],
@@ -725,6 +820,11 @@ def test_similar_movies_response_excludes_target(monkeypatch):
     })
 
     monkeypatch.setattr(api_module.pd, "read_csv", lambda path: movie_features)
+    monkeypatch.setattr(
+        api_module,
+        "rank_movies_by_als_similarity",
+        lambda movie_id, candidate_ids, n: [],
+    )
 
     response = client.get("/similar_movies/1?n=3")
 
@@ -736,6 +836,7 @@ def test_similar_movies_response_excludes_target(monkeypatch):
             "genres": "Crime, Drama",
             "avg_rating": 4.0,
             "similarity_score": 1.0,
+            "similarity_method": "genre_overlap",
         },
         {
             "movie_id": 4,
@@ -743,6 +844,7 @@ def test_similar_movies_response_excludes_target(monkeypatch):
             "genres": "Crime, Drama, Thriller",
             "avg_rating": 4.4,
             "similarity_score": 0.667,
+            "similarity_method": "genre_overlap",
         },
         {
             "movie_id": 2,
@@ -750,6 +852,7 @@ def test_similar_movies_response_excludes_target(monkeypatch):
             "genres": "Drama",
             "avg_rating": 4.8,
             "similarity_score": 0.5,
+            "similarity_method": "genre_overlap",
         },
     ]
 
