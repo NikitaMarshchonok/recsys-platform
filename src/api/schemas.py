@@ -189,8 +189,10 @@ class MetricsResponse(BaseModel):
     spark_loaded: bool
     model_loaded: bool
     movie_catalog_loaded: bool
+    movie_features_loaded: bool
     user_catalog_loaded: bool
     cached_movies: int
+    cached_movie_features: int
     cached_users: int
 
 

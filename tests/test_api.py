@@ -121,6 +121,7 @@ def mock_api_resources(monkeypatch):
     })
 
     monkeypatch.setattr(api_module, "init_db", lambda: None)
+    monkeypatch.setattr(api_module, "movie_features_cache", None)
     monkeypatch.setattr(
         api_module,
         "load_recommendation_resources",
@@ -298,6 +299,11 @@ def test_metrics(monkeypatch):
     monkeypatch.setattr(api_module, "spark", object())
     monkeypatch.setattr(api_module, "model", object())
     monkeypatch.setattr(api_module, "movies", pd.DataFrame({"movieId": [1, 2, 3]}))
+    monkeypatch.setattr(
+        api_module,
+        "movie_features_cache",
+        pd.DataFrame({"movieId": [1, 2, 3, 4]}),
+    )
     monkeypatch.setattr(api_module, "valid_user_ids", {1, 2})
 
     response = client.get("/metrics")
@@ -307,10 +313,32 @@ def test_metrics(monkeypatch):
         "spark_loaded": True,
         "model_loaded": True,
         "movie_catalog_loaded": True,
+        "movie_features_loaded": True,
         "user_catalog_loaded": True,
         "cached_movies": 3,
+        "cached_movie_features": 4,
         "cached_users": 2,
     }
+
+
+def test_load_movie_features_caches_dataframe(monkeypatch):
+    movie_features = pd.DataFrame({"movieId": [1, 2, 3]})
+    read_count = 0
+
+    def read_csv(path):
+        nonlocal read_count
+        read_count += 1
+        return movie_features
+
+    monkeypatch.setattr(api_module, "movie_features_cache", None)
+    monkeypatch.setattr(api_module.pd, "read_csv", read_csv)
+
+    first = api_module.load_movie_features()
+    second = api_module.load_movie_features()
+
+    assert first is movie_features
+    assert second is movie_features
+    assert read_count == 1
 
 
 def test_model_info_response():

@@ -51,6 +51,8 @@ spark = None
 model = None
 movies = None
 valid_user_ids = None
+movie_features_cache = None
+movie_features_lock = threading.Lock()
 item_factor_index = None
 item_factor_lock = threading.Lock()
 
@@ -255,6 +257,17 @@ def load_movie_catalog():
     return movies
 
 
+def load_movie_features():
+    global movie_features_cache
+
+    if movie_features_cache is None:
+        with movie_features_lock:
+            if movie_features_cache is None:
+                movie_features_cache = pd.read_csv(settings.movie_features_path)
+
+    return movie_features_cache
+
+
 def load_valid_user_ids():
     global valid_user_ids
 
@@ -317,9 +330,7 @@ def fuzzy_title_score(query: str, title: str) -> float:
 
 
 def select_top_movies(n: int, genre: str | None = None):
-    movie_features = rank_movies_by_confidence(
-        pd.read_csv(settings.movie_features_path)
-    )
+    movie_features = rank_movies_by_confidence(load_movie_features())
 
     if genre is not None:
         movie_features = movie_features[
@@ -471,8 +482,12 @@ def metrics():
         "spark_loaded": spark is not None,
         "model_loaded": model is not None,
         "movie_catalog_loaded": movies is not None,
+        "movie_features_loaded": movie_features_cache is not None,
         "user_catalog_loaded": valid_user_ids is not None,
         "cached_movies": 0 if movies is None else len(movies),
+        "cached_movie_features": (
+            0 if movie_features_cache is None else len(movie_features_cache)
+        ),
         "cached_users": 0 if valid_user_ids is None else len(valid_user_ids),
     }
 
@@ -524,7 +539,7 @@ def model_info():
 
 @app.get("/catalog/summary", response_model=CatalogSummaryResponse)
 def catalog_summary():
-    movie_features = pd.read_csv(settings.movie_features_path)
+    movie_features = load_movie_features()
 
     if movie_features.empty:
         return {
@@ -729,7 +744,7 @@ def recommendation_feedback_summary():
 
 @app.get("/similar_movies/{movie_id}", response_model=list[SimilarMovieResponse])
 def similar_movies(movie_id: int, n: int = Query(default=5, ge=1, le=50)):
-    movie_features = pd.read_csv(settings.movie_features_path)
+    movie_features = load_movie_features()
     
     # Проверяем что фильм существует
     target = movie_features[movie_features["movieId"] == movie_id]
@@ -815,7 +830,7 @@ def top_movies(
 
 @app.get("/movies/genres", response_model=list[GenreSummaryResponse])
 def movie_genres():
-    movie_features = pd.read_csv(settings.movie_features_path)
+    movie_features = load_movie_features()
 
     genre_stats = movie_features.groupby("genres").agg(
         movie_count=("movieId", "count"),
@@ -845,9 +860,7 @@ def search_movies(
     min_rating: float | None = Query(default=None, ge=0, le=5),
     sort_by: Literal["rating", "popularity", "title"] = Query(default="rating"),
 ):
-    movie_features = rank_movies_by_confidence(
-        pd.read_csv(settings.movie_features_path)
-    )
+    movie_features = rank_movies_by_confidence(load_movie_features())
 
     query = q.strip()
     matches = movie_features
@@ -911,9 +924,7 @@ def discover_movie(
     min_ratings: int = Query(default=100, ge=1, le=1_000_000),
     seed: int | None = Query(default=None, ge=0, le=2_147_483_647),
 ):
-    movie_features = rank_movies_by_confidence(
-        pd.read_csv(settings.movie_features_path)
-    )
+    movie_features = rank_movies_by_confidence(load_movie_features())
     candidates = movie_features[
         (movie_features["avg_rating"] >= min_rating)
         & (movie_features["total_ratings"] >= min_ratings)
@@ -943,9 +954,7 @@ def discover_movie(
 
 @app.get("/movies/{movie_id}", response_model=MovieDetailResponse)
 def movie_detail(movie_id: int):
-    movie_features = rank_movies_by_confidence(
-        pd.read_csv(settings.movie_features_path)
-    )
+    movie_features = rank_movies_by_confidence(load_movie_features())
 
     target = movie_features[movie_features["movieId"] == movie_id]
     if target.empty:
