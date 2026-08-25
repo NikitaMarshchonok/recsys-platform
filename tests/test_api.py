@@ -120,7 +120,9 @@ def mock_api_resources(monkeypatch):
         "genres": ["Drama", "Comedy", "Action", "Sci-Fi", "Thriller"],
     })
 
+    api_module.load_als_candidate_scores.cache_clear()
     monkeypatch.setattr(api_module, "init_db", lambda: None)
+    monkeypatch.setattr(api_module, "movies", movies)
     monkeypatch.setattr(api_module, "movie_features_cache", None)
     monkeypatch.setattr(
         api_module,
@@ -128,6 +130,8 @@ def mock_api_resources(monkeypatch):
         lambda: (FakeSpark(), FakeModel(), movies, {1}),
     )
     monkeypatch.setattr(api_module, "load_valid_user_ids", lambda: {1})
+    yield
+    api_module.load_als_candidate_scores.cache_clear()
 
 
 def test_stats_response(monkeypatch):
@@ -305,6 +309,8 @@ def test_metrics(monkeypatch):
         pd.DataFrame({"movieId": [1, 2, 3, 4]}),
     )
     monkeypatch.setattr(api_module, "valid_user_ids", {1, 2})
+    api_module.load_als_candidate_scores(1, 5)
+    api_module.load_als_candidate_scores(1, 5)
 
     response = client.get("/metrics")
 
@@ -318,7 +324,34 @@ def test_metrics(monkeypatch):
         "cached_movies": 3,
         "cached_movie_features": 4,
         "cached_users": 2,
+        "recommendation_cache_entries": 1,
+        "recommendation_cache_hits": 1,
+        "recommendation_cache_misses": 1,
     }
+
+
+def test_als_candidate_scores_are_cached(monkeypatch):
+    class CountingModel(FakeModel):
+        calls = 0
+
+        def recommendForUserSubset(self, user_df, n_recommendations):
+            self.calls += 1
+            return super().recommendForUserSubset(user_df, n_recommendations)
+
+    counting_model = CountingModel()
+    movies = pd.DataFrame({"movieId": [1, 2, 3, 4, 5]})
+    monkeypatch.setattr(
+        api_module,
+        "load_recommendation_resources",
+        lambda: (FakeSpark(), counting_model, movies, {1}),
+    )
+
+    first = api_module.load_als_candidate_scores(1, 5)
+    second = api_module.load_als_candidate_scores(1, 5)
+
+    assert first == second
+    assert counting_model.calls == 1
+    assert api_module.load_als_candidate_scores.cache_info().hits == 1
 
 
 def test_load_movie_features_caches_dataframe(monkeypatch):
@@ -501,6 +534,7 @@ def test_recommendation_diversity_reranks_repeated_genres(monkeypatch):
         "load_recommendation_resources",
         lambda: (FakeSpark(), FakeModel(), movies, {1}),
     )
+    monkeypatch.setattr(api_module, "load_movie_catalog", lambda: movies)
 
     diversified = client.post(
         "/recommend",

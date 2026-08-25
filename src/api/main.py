@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+from functools import lru_cache
 import json
 import logging
 import os
@@ -183,6 +184,27 @@ def load_recommendation_resources():
         model = ALSModel.load(str(settings.model_path))
 
     return spark, model, load_movie_catalog(), load_valid_user_ids()
+
+
+@lru_cache(maxsize=2048)
+def load_als_candidate_scores(
+    user_id: int,
+    candidate_count: int,
+) -> tuple[tuple[int, float], ...]:
+    spark_session, als_model, _, _ = load_recommendation_resources()
+    user_df = spark_session.createDataFrame([(user_id,)], ["userId"])
+    rows = als_model.recommendForUserSubset(
+        user_df,
+        candidate_count,
+    ).collect()
+
+    if not rows:
+        return ()
+
+    return tuple(
+        (int(recommendation["movieId"]), float(recommendation["rating"]))
+        for recommendation in rows[0]["recommendations"]
+    )
 
 
 def load_item_factor_index():
@@ -478,6 +500,8 @@ def readiness():
 
 @app.get("/metrics", response_model=MetricsResponse)
 def metrics():
+    recommendation_cache = load_als_candidate_scores.cache_info()
+
     return {
         "spark_loaded": spark is not None,
         "model_loaded": model is not None,
@@ -489,6 +513,9 @@ def metrics():
             0 if movie_features_cache is None else len(movie_features_cache)
         ),
         "cached_users": 0 if valid_user_ids is None else len(valid_user_ids),
+        "recommendation_cache_entries": recommendation_cache.currsize,
+        "recommendation_cache_hits": recommendation_cache.hits,
+        "recommendation_cache_misses": recommendation_cache.misses,
     }
 
 
@@ -602,31 +629,19 @@ def recommend(request: RecommendRequest):
         source = "fallback_top_diverse" if request.diversify else "fallback_top"
     else:
         try:
-            spark_session, als_model, movie_catalog, _ = load_recommendation_resources()
-
-            user_df = spark_session.createDataFrame(
-                [(request.user_id,)],
-                ["userId"]
-            )
-
-            recs = als_model.recommendForUserSubset(
-                user_df,
+            recs_list = load_als_candidate_scores(
+                request.user_id,
                 candidate_count,
             )
-
-            rows = recs.collect()
-            if not rows:
+            if not recs_list:
                 raise HTTPException(
                     status_code=404,
                     detail=f"Для пользователя {request.user_id} нет рекомендаций"
                 )
 
-            recs_list = rows[0]["recommendations"]
-
-            movie_lookup = movie_catalog.set_index("movieId")
+            movie_lookup = load_movie_catalog().set_index("movieId")
             candidates = []
-            for rec in recs_list:
-                movie_id = int(rec["movieId"])
+            for movie_id, rating in recs_list:
                 if movie_id not in movie_lookup.index:
                     continue
                 movie_info = movie_lookup.loc[movie_id]
@@ -634,7 +649,7 @@ def recommend(request: RecommendRequest):
                     "movie_id": movie_id,
                     "title": movie_info["title"],
                     "genres": movie_info["genres"],
-                    "rating": rec["rating"],
+                    "rating": rating,
                 })
             source = "als_diverse" if request.diversify else "als"
         except HTTPException:

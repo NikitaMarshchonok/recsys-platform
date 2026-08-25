@@ -357,6 +357,7 @@ password: admin
 
 - The API loads Spark and the ALS model lazily when recommendations or ALS movie similarity are requested.
 - The processed movie feature catalog is loaded once and reused across API requests.
+- Personalized ALS candidate scores use a bounded in-memory cache for repeat requests.
 - `/health` checks that the API process is alive; `/ready` checks the Java runtime and required model and data artifacts.
 - The API Docker image includes a container healthcheck against `/health`.
 - Every API response includes `X-Request-ID` and `X-Response-Time-ms` headers for tracing.
@@ -372,7 +373,7 @@ password: admin
 - Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
 - Latest local ALS holdout RMSE: 0.8608
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 69 passing tests covering API contracts, ranking behavior,
+- Test suite: 70 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status

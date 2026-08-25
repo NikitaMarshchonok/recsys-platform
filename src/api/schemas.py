@@ -194,6 +194,9 @@ class MetricsResponse(BaseModel):
     cached_movies: int
     cached_movie_features: int
     cached_users: int
+    recommendation_cache_entries: int
+    recommendation_cache_hits: int
+    recommendation_cache_misses: int
 
 
 class ModelInfoResponse(BaseModel):
