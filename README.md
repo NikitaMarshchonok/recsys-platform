@@ -373,7 +373,7 @@ password: admin
 - Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
 - Latest local ALS holdout RMSE: 0.8608
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 70 passing tests covering API contracts, ranking behavior,
+- Test suite: 75 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status
