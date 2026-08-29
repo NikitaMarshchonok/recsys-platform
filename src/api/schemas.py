@@ -210,6 +210,9 @@ class ModelInfoResponse(BaseModel):
     ranking_k: int | None
     precision_at_k: float | None
     recall_at_k: float | None
+    ranking_evaluated_users: int | None
+    ranking_relevance_threshold: float | None
+    ranking_candidate_policy: str | None
     sample_fraction: float | None
     train_ratings: int | None
     test_ratings: int | None

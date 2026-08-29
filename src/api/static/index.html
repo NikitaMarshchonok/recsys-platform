@@ -1237,6 +1237,19 @@
       const hasRankingMetrics = info.ranking_k !== null
         && info.precision_at_k !== null
         && info.recall_at_k !== null;
+      const rankingContext = info.ranking_evaluated_users !== null
+        && info.ranking_relevance_threshold !== null
+        ? `
+          <div class="metric">
+            <span>Evaluated users</span>
+            <strong>${Number(info.ranking_evaluated_users).toLocaleString()}</strong>
+          </div>
+          <div class="metric">
+            <span>Relevant rating</span>
+            <strong>&gt;= ${formatRating(info.ranking_relevance_threshold)}</strong>
+          </div>
+        `
+        : "";
       const rankingMetrics = hasRankingMetrics
         ? `
           <div class="metric">
@@ -1247,6 +1260,7 @@
             <span>Recall@${info.ranking_k}</span>
             <strong>${(Number(info.recall_at_k) * 100).toFixed(1)}%</strong>
           </div>
+          ${rankingContext}
         `
         : "";
 

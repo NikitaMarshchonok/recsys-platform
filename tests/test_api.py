@@ -173,6 +173,9 @@ def test_web_app_response():
     assert "primaryGenre" in response.text
     assert "Model Status" in response.text
     assert "model-info" in response.text
+    assert "Evaluated users" in response.text
+    assert "Relevant rating" in response.text
+    assert "ranking_evaluated_users" in response.text
     assert "Movie Detail" in response.text
     assert "User Context" in response.text
     assert "Similar Movies" in response.text
@@ -387,6 +390,11 @@ def test_model_info_response():
     assert data["ranking_k"] == 10
     assert data["precision_at_k"] == 0.3182
     assert data["recall_at_k"] == 0.9452
+    assert data["ranking_evaluated_users"] == 100952
+    assert data["ranking_relevance_threshold"] == 4.0
+    assert data["ranking_candidate_policy"] == (
+        "observed test interactions ranked by prediction"
+    )
     assert data["train_ratings"] == 3202980
     assert data["rating_scale_min"] == 0.0
     assert data["rating_scale_max"] == 5.0
@@ -399,7 +407,12 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
         "model_name": "ALS recommender",
         "algorithm": "pyspark.ml.recommendation.ALS",
         "dataset": "MovieLens ratings",
-        "ranking_evaluation": {"k": 10},
+        "ranking_evaluation": {
+            "k": 10,
+            "evaluated_users": 25,
+            "relevance_threshold": 4.0,
+            "candidate_policy": "test candidates",
+        },
         "metrics": {
             "rmse": 0.8608,
             "precision_at_10": 0.125,
@@ -414,6 +427,9 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
     assert data["ranking_k"] == 10
     assert data["precision_at_k"] == 0.125
     assert data["recall_at_k"] == 0.375
+    assert data["ranking_evaluated_users"] == 25
+    assert data["ranking_relevance_threshold"] == 4.0
+    assert data["ranking_candidate_policy"] == "test candidates"
 
 
 def test_catalog_summary(monkeypatch):

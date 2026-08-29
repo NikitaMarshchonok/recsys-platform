@@ -552,6 +552,11 @@ def model_info():
         "ranking_k": ranking_k,
         "precision_at_k": precision_at_k,
         "recall_at_k": recall_at_k,
+        "ranking_evaluated_users": ranking_evaluation.get("evaluated_users"),
+        "ranking_relevance_threshold": ranking_evaluation.get(
+            "relevance_threshold"
+        ),
+        "ranking_candidate_policy": ranking_evaluation.get("candidate_policy"),
         "sample_fraction": training.get("sample_fraction"),
         "train_ratings": training.get("train_ratings"),
         "test_ratings": training.get("test_ratings"),
