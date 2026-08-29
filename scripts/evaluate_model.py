@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         default=4.0,
         help="Minimum rating treated as relevant.",
     )
+    parser.add_argument(
+        "--update-model-card",
+        action="store_true",
+        help="Atomically write the evaluation results to model_card.json.",
+    )
     return parser.parse_args()
 
 
@@ -131,6 +136,37 @@ def evaluate_saved_model(
         spark.stop()
 
 
+def update_model_card(
+    model_path: Path,
+    evaluation: dict[str, float | int | str],
+) -> None:
+    model_card_path = model_path / "model_card.json"
+    with model_card_path.open(encoding="utf-8") as file:
+        model_card = json.load(file)
+
+    ranking_k = int(evaluation["ranking_k"])
+    model_card["ranking_evaluation"] = {
+        "k": ranking_k,
+        "relevance_threshold": float(evaluation["relevance_threshold"]),
+        "candidate_policy": "observed test interactions ranked by prediction",
+        "evaluated_users": int(evaluation["evaluated_users"]),
+    }
+    metrics = model_card.setdefault("metrics", {})
+    metrics["rmse"] = float(evaluation["rmse"])
+    metrics[f"precision_at_{ranking_k}"] = float(
+        evaluation[f"precision_at_{ranking_k}"]
+    )
+    metrics[f"recall_at_{ranking_k}"] = float(
+        evaluation[f"recall_at_{ranking_k}"]
+    )
+
+    temporary_path = model_card_path.with_suffix(".json.tmp")
+    with temporary_path.open("w", encoding="utf-8") as file:
+        json.dump(model_card, file, indent=2)
+        file.write("\n")
+    temporary_path.replace(model_card_path)
+
+
 def main() -> None:
     args = parse_args()
     metrics = evaluate_saved_model(
@@ -139,6 +175,9 @@ def main() -> None:
         k=args.k,
         relevance_threshold=args.relevance_threshold,
     )
+    if args.update_model_card:
+        update_model_card(args.model_path, metrics)
+        metrics["model_card_updated"] = True
     print(json.dumps(metrics, indent=2))
 
 

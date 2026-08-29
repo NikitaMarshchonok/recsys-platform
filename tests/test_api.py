@@ -384,9 +384,9 @@ def test_model_info_response():
     assert data["model_exists"] is True
     assert data["model_card_available"] is True
     assert data["rmse"] == 0.8608
-    assert data["ranking_k"] is None
-    assert data["precision_at_k"] is None
-    assert data["recall_at_k"] is None
+    assert data["ranking_k"] == 10
+    assert data["precision_at_k"] == 0.3182
+    assert data["recall_at_k"] == 0.9452
     assert data["train_ratings"] == 3202980
     assert data["rating_scale_min"] == 0.0
     assert data["rating_scale_max"] == 5.0

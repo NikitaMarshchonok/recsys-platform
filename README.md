@@ -121,6 +121,7 @@ make evaluate-model
 ```
 
 The command prints RMSE, Precision@10, Recall@10, and evaluated data volume as JSON.
+Persist the verified metrics to the model card with `make update-model-card`.
 
 Start the API:
 
@@ -142,6 +143,7 @@ make coverage
 make lint
 make import-movielens
 make evaluate-model
+make update-model-card
 make pipeline
 make run-api
 ```
@@ -381,8 +383,10 @@ password: admin
 - Processed recommendation catalog: 26,744 rated movies
 - Latest training run: 4,002,443 sampled ratings with a reproducible 80/20 split
 - Latest local ALS holdout RMSE: 0.8608
+- Latest observed-holdout Precision@10: 0.3182
+- Latest observed-holdout Recall@10: 0.9452
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 75 passing tests covering API contracts, ranking behavior,
+- Test suite: 76 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status
@@ -395,6 +399,7 @@ Implemented:
 - ALS model training
 - MLflow experiment tracking
 - Machine-readable model card with training metadata and RMSE
+- Offline Precision@10 and Recall@10 evaluation
 - FastAPI recommendation serving
 - Browser demo UI
 - Confidence-aware catalog ranking and typo-tolerant live search
@@ -409,7 +414,6 @@ Implemented:
 Future improvements:
 
 - Real MovieLens dataset versioning
-- Offline ranking metrics such as precision@k and recall@k
 - Model registry promotion flow
 - Batch recommendation cache
 - Authentication and rate limiting

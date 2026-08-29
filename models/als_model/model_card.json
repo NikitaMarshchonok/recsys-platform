@@ -28,6 +28,14 @@
     "cold_start_strategy": "drop"
   },
   "metrics": {
-    "rmse": 0.8608
+    "rmse": 0.8608,
+    "precision_at_10": 0.3182,
+    "recall_at_10": 0.9452
+  },
+  "ranking_evaluation": {
+    "k": 10,
+    "relevance_threshold": 4.0,
+    "candidate_policy": "observed test interactions ranked by prediction",
+    "evaluated_users": 100952
   }
 }
