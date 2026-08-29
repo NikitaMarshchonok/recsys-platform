@@ -114,6 +114,14 @@ MLFLOW_TRACKING_URI=file:./mlruns python -m src.training.train
 Training writes the Spark model and a compact `models/als_model/model_card.json`
 with RMSE, data split sizes, hyperparameters, and score policy.
 
+Evaluate the saved model on the same reproducible holdout without retraining:
+
+```bash
+make evaluate-model
+```
+
+The command prints RMSE, Precision@10, Recall@10, and evaluated data volume as JSON.
+
 Start the API:
 
 ```bash
@@ -133,6 +141,7 @@ make test
 make coverage
 make lint
 make import-movielens
+make evaluate-model
 make pipeline
 make run-api
 ```

@@ -7,7 +7,7 @@ MOVIELENS_MOVIES_FILE ?=
 MOVIELENS_RATINGS_FILE ?=
 RAW_DATA_DIR ?= data/raw
 
-.PHONY: help install lint test coverage generate-data import-movielens features train pipeline run-api docker-up docker-down
+.PHONY: help install lint test coverage generate-data import-movielens features train evaluate-model pipeline run-api docker-up docker-down
 
 help:
 	@echo "Available commands:"
@@ -19,6 +19,7 @@ help:
 	@echo "  make import-movielens Import MovieLens CSV files into data/raw"
 	@echo "  make features       Run Spark feature engineering"
 	@echo "  make train          Train the ALS model"
+	@echo "  make evaluate-model Evaluate the saved ALS model"
 	@echo "  make pipeline       Run data generation, features, and training"
 	@echo "  make run-api        Start the FastAPI service"
 	@echo "  make docker-up      Start Docker Compose services"
@@ -47,6 +48,9 @@ features:
 
 train:
 	JAVA_HOME=$(JAVA_HOME) MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) -m src.training.train
+
+evaluate-model:
+	JAVA_HOME=$(JAVA_HOME) $(PYTHON) -m scripts.evaluate_model
 
 pipeline: generate-data features train
 
