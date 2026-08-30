@@ -385,6 +385,7 @@ password: admin
 - Latest local ALS holdout RMSE: 0.8608
 - Latest observed-holdout Precision@10: 0.3182
 - Latest observed-holdout Recall@10: 0.9452
+- Latest observed-holdout prediction coverage: 99.81%
 - Model artifacts and a machine-readable model card saved to `models/als_model`
 - Test suite: 76 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks

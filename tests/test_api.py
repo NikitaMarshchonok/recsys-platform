@@ -175,6 +175,7 @@ def test_web_app_response():
     assert "model-info" in response.text
     assert "Evaluated users" in response.text
     assert "Relevant rating" in response.text
+    assert "Prediction coverage" in response.text
     assert "ranking_evaluated_users" in response.text
     assert "Movie Detail" in response.text
     assert "User Context" in response.text
@@ -395,6 +396,8 @@ def test_model_info_response():
     assert data["ranking_candidate_policy"] == (
         "observed test interactions ranked by prediction"
     )
+    assert data["predicted_ratings"] == 797972
+    assert data["prediction_coverage"] == 0.9981
     assert data["train_ratings"] == 3202980
     assert data["rating_scale_min"] == 0.0
     assert data["rating_scale_max"] == 5.0
@@ -412,6 +415,8 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
             "evaluated_users": 25,
             "relevance_threshold": 4.0,
             "candidate_policy": "test candidates",
+            "predicted_ratings": 24,
+            "prediction_coverage": 0.96,
         },
         "metrics": {
             "rmse": 0.8608,
@@ -430,6 +435,8 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
     assert data["ranking_evaluated_users"] == 25
     assert data["ranking_relevance_threshold"] == 4.0
     assert data["ranking_candidate_policy"] == "test candidates"
+    assert data["predicted_ratings"] == 24
+    assert data["prediction_coverage"] == 0.96
 
 
 def test_catalog_summary(monkeypatch):

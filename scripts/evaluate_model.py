@@ -115,6 +115,10 @@ def evaluate_saved_model(
             "model_path": str(model_path),
             "test_ratings": test_ratings,
             "predicted_ratings": predicted_ratings,
+            "prediction_coverage": round(
+                predicted_ratings / test_ratings if test_ratings else 0.0,
+                4,
+            ),
             "rmse": round(float(rmse), 4),
             "ranking_k": k,
             "relevance_threshold": relevance_threshold,
@@ -145,11 +149,19 @@ def update_model_card(
         model_card = json.load(file)
 
     ranking_k = int(evaluation["ranking_k"])
+    test_ratings = int(evaluation["test_ratings"])
+    predicted_ratings = int(evaluation["predicted_ratings"])
     model_card["ranking_evaluation"] = {
         "k": ranking_k,
         "relevance_threshold": float(evaluation["relevance_threshold"]),
         "candidate_policy": "observed test interactions ranked by prediction",
         "evaluated_users": int(evaluation["evaluated_users"]),
+        "test_ratings": test_ratings,
+        "predicted_ratings": predicted_ratings,
+        "prediction_coverage": round(
+            predicted_ratings / test_ratings if test_ratings else 0.0,
+            4,
+        ),
     }
     metrics = model_card.setdefault("metrics", {})
     metrics["rmse"] = float(evaluation["rmse"])

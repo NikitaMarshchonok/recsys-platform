@@ -18,6 +18,7 @@ def test_update_model_card_writes_ranking_metrics_atomically(tmp_path):
         "model_path": str(model_path),
         "test_ratings": 12,
         "predicted_ratings": 11,
+        "prediction_coverage": 0.9167,
         "rmse": 0.8,
         "ranking_k": 10,
         "relevance_threshold": 4.0,
@@ -40,5 +41,8 @@ def test_update_model_card_writes_ranking_metrics_atomically(tmp_path):
         "relevance_threshold": 4.0,
         "candidate_policy": "observed test interactions ranked by prediction",
         "evaluated_users": 3,
+        "test_ratings": 12,
+        "predicted_ratings": 11,
+        "prediction_coverage": 0.9167,
     }
     assert not (model_path / "model_card.json.tmp").exists()

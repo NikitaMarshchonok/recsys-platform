@@ -213,6 +213,8 @@ class ModelInfoResponse(BaseModel):
     ranking_evaluated_users: int | None
     ranking_relevance_threshold: float | None
     ranking_candidate_policy: str | None
+    predicted_ratings: int | None
+    prediction_coverage: float | None
     sample_fraction: float | None
     train_ratings: int | None
     test_ratings: int | None

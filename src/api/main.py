@@ -557,6 +557,8 @@ def model_info():
             "relevance_threshold"
         ),
         "ranking_candidate_policy": ranking_evaluation.get("candidate_policy"),
+        "predicted_ratings": ranking_evaluation.get("predicted_ratings"),
+        "prediction_coverage": ranking_evaluation.get("prediction_coverage"),
         "sample_fraction": training.get("sample_fraction"),
         "train_ratings": training.get("train_ratings"),
         "test_ratings": training.get("test_ratings"),

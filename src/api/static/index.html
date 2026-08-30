@@ -1248,6 +1248,12 @@
             <span>Relevant rating</span>
             <strong>&gt;= ${formatRating(info.ranking_relevance_threshold)}</strong>
           </div>
+          ${info.prediction_coverage === null ? "" : `
+            <div class="metric">
+              <span>Prediction coverage</span>
+              <strong>${(Number(info.prediction_coverage) * 100).toFixed(1)}%</strong>
+            </div>
+          `}
         `
         : "";
       const rankingMetrics = hasRankingMetrics

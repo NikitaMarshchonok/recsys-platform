@@ -36,6 +36,9 @@
     "k": 10,
     "relevance_threshold": 4.0,
     "candidate_policy": "observed test interactions ranked by prediction",
-    "evaluated_users": 100952
+    "evaluated_users": 100952,
+    "test_ratings": 799463,
+    "predicted_ratings": 797972,
+    "prediction_coverage": 0.9981
   }
 }
