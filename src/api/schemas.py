@@ -206,6 +206,8 @@ class ModelInfoResponse(BaseModel):
     model_exists: bool
     model_card_available: bool
     model_size_mb: float
+    trained_at: str | None
+    generated_by: str | None
     rmse: float | None
     ranking_k: int | None
     precision_at_k: float | None

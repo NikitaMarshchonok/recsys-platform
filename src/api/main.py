@@ -548,6 +548,8 @@ def model_info():
         "model_exists": settings.model_path.exists(),
         "model_card_available": bool(card),
         "model_size_mb": round(directory_size_bytes(settings.model_path) / 1024 / 1024, 2),
+        "trained_at": card.get("trained_at"),
+        "generated_by": card.get("generated_by"),
         "rmse": metrics.get("rmse"),
         "ranking_k": ranking_k,
         "precision_at_k": precision_at_k,

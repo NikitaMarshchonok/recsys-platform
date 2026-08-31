@@ -209,7 +209,7 @@ copied as a shareable link.
 | GET | `/version` | Service name and API version |
 | GET | `/ready` | Readiness check for model and data artifacts |
 | GET | `/metrics` | Lightweight runtime cache metrics |
-| GET | `/model/info` | Model card summary with RMSE, ranking metrics, evaluation context, data volume, score policy, and artifact size |
+| GET | `/model/info` | Model card summary with training timestamp, RMSE, ranking metrics, evaluation context, data volume, score policy, and artifact size |
 | GET | `/catalog/summary` | Catalog-level business summary for dashboards and demos |
 | GET | `/movies/genres` | Available movie genres with catalog statistics |
 | GET | `/movies/top` | Confidence-weighted top movies with an explainable ranking score |

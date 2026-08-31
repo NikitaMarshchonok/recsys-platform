@@ -173,6 +173,9 @@ def test_web_app_response():
     assert "primaryGenre" in response.text
     assert "Model Status" in response.text
     assert "model-info" in response.text
+    assert "formatDate" in response.text
+    assert "trained_at" in response.text
+    assert "Trained" in response.text
     assert "Evaluated users" in response.text
     assert "Relevant rating" in response.text
     assert "Prediction coverage" in response.text
@@ -387,6 +390,8 @@ def test_model_info_response():
     assert data["algorithm"] == "pyspark.ml.recommendation.ALS"
     assert data["model_exists"] is True
     assert data["model_card_available"] is True
+    assert data["trained_at"] == "2026-07-10T13:03:03+00:00"
+    assert data["generated_by"] == "src/training/train.py"
     assert data["rmse"] == 0.8608
     assert data["ranking_k"] == 10
     assert data["precision_at_k"] == 0.3182
@@ -410,6 +415,8 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
         "model_name": "ALS recommender",
         "algorithm": "pyspark.ml.recommendation.ALS",
         "dataset": "MovieLens ratings",
+        "trained_at": "2026-08-01T12:00:00+00:00",
+        "generated_by": "test-training-job",
         "ranking_evaluation": {
             "k": 10,
             "evaluated_users": 25,
@@ -430,6 +437,8 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert data["ranking_k"] == 10
+    assert data["trained_at"] == "2026-08-01T12:00:00+00:00"
+    assert data["generated_by"] == "test-training-job"
     assert data["precision_at_k"] == 0.125
     assert data["recall_at_k"] == 0.375
     assert data["ranking_evaluated_users"] == 25

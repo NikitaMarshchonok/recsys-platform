@@ -709,6 +709,22 @@
       return Number.isFinite(rating) ? rating.toFixed(2) : "0.00";
     }
 
+    function formatDate(value) {
+      if (!value) {
+        return "n/a";
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return "n/a";
+      }
+      return new Intl.DateTimeFormat("en", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }).format(date);
+    }
+
     function formatStrategyLabel(rankingStrategy) {
       const strategyLabels = {
         als: "ALS",
@@ -1228,6 +1244,7 @@
 
     function renderModelInfo(info) {
       const rmse = info.rmse === null ? "n/a" : formatRating(info.rmse);
+      const trainedAt = formatDate(info.trained_at);
       const trainRatings = info.train_ratings === null
         ? "n/a"
         : Number(info.train_ratings).toLocaleString();
@@ -1272,6 +1289,7 @@
 
       modelInfoEl.innerHTML = `
         <div class="metric"><span>Algorithm</span><strong>${escapeHtml(algorithm)}</strong></div>
+        <div class="metric"><span>Trained</span><strong>${trainedAt}</strong></div>
         <div class="metric"><span>RMSE</span><strong>${rmse}</strong></div>
         ${rankingMetrics}
         <div class="metric"><span>Train ratings</span><strong>${trainRatings}</strong></div>
