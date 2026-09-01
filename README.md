@@ -386,8 +386,9 @@ password: admin
 - Latest observed-holdout Precision@10: 0.3182
 - Latest observed-holdout Recall@10: 0.9452
 - Latest observed-holdout prediction coverage: 99.81%
+- Training dataset version: `fb6f40a26e0d` (SHA-256)
 - Model artifacts and a machine-readable model card saved to `models/als_model`
-- Test suite: 76 passing tests covering API contracts, ranking behavior,
+- Test suite: 78 passing tests covering API contracts, ranking behavior,
   feedback, MovieLens import, validation, and fallbacks
 
 ## Project Status
@@ -396,6 +397,7 @@ Implemented:
 
 - Synthetic data generation
 - Real MovieLens import workflow and catalog titles
+- SHA-256 versioning for the MovieLens training dataset
 - Spark feature engineering
 - ALS model training
 - MLflow experiment tracking
@@ -414,7 +416,6 @@ Implemented:
 
 Future improvements:
 
-- Real MovieLens dataset versioning
 - Model registry promotion flow
 - Batch recommendation cache
 - Authentication and rate limiting

@@ -1245,6 +1245,9 @@
     function renderModelInfo(info) {
       const rmse = info.rmse === null ? "n/a" : formatRating(info.rmse);
       const trainedAt = formatDate(info.trained_at);
+      const dataVersion = info.training_data_sha256 === null
+        ? "n/a"
+        : info.training_data_sha256.slice(0, 12);
       const trainRatings = info.train_ratings === null
         ? "n/a"
         : Number(info.train_ratings).toLocaleString();
@@ -1290,6 +1293,7 @@
       modelInfoEl.innerHTML = `
         <div class="metric"><span>Algorithm</span><strong>${escapeHtml(algorithm)}</strong></div>
         <div class="metric"><span>Trained</span><strong>${trainedAt}</strong></div>
+        <div class="metric"><span>Data version</span><strong>${escapeHtml(dataVersion)}</strong></div>
         <div class="metric"><span>RMSE</span><strong>${rmse}</strong></div>
         ${rankingMetrics}
         <div class="metric"><span>Train ratings</span><strong>${trainRatings}</strong></div>

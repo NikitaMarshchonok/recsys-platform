@@ -527,6 +527,7 @@ def model_info():
     ranking_evaluation = card.get("ranking_evaluation", {})
     rating_scale = card.get("rating_scale", {})
     score_policy = card.get("score_policy", {})
+    training_data = card.get("training_data", {})
     raw_score_policy = score_policy.get("raw_predicted_rating", "unbounded model output")
     predicted_score_policy = score_policy.get("predicted_rating", "user-facing score")
     ranking_k = ranking_evaluation.get("k")
@@ -550,6 +551,8 @@ def model_info():
         "model_size_mb": round(directory_size_bytes(settings.model_path) / 1024 / 1024, 2),
         "trained_at": card.get("trained_at"),
         "generated_by": card.get("generated_by"),
+        "training_data_sha256": training_data.get("sha256"),
+        "training_data_size_bytes": training_data.get("size_bytes"),
         "rmse": metrics.get("rmse"),
         "ranking_k": ranking_k,
         "precision_at_k": precision_at_k,

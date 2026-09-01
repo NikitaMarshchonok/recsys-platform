@@ -176,6 +176,8 @@ def test_web_app_response():
     assert "formatDate" in response.text
     assert "trained_at" in response.text
     assert "Trained" in response.text
+    assert "Data version" in response.text
+    assert "training_data_sha256" in response.text
     assert "Evaluated users" in response.text
     assert "Relevant rating" in response.text
     assert "Prediction coverage" in response.text
@@ -392,6 +394,10 @@ def test_model_info_response():
     assert data["model_card_available"] is True
     assert data["trained_at"] == "2026-07-10T13:03:03+00:00"
     assert data["generated_by"] == "src/training/train.py"
+    assert data["training_data_sha256"] == (
+        "fb6f40a26e0d41e8062afbd4bb00e2f092e2b889a8245d0d61ab0c94e22197bf"
+    )
+    assert data["training_data_size_bytes"] == 513444147
     assert data["rmse"] == 0.8608
     assert data["ranking_k"] == 10
     assert data["precision_at_k"] == 0.3182
@@ -417,6 +423,10 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
         "dataset": "MovieLens ratings",
         "trained_at": "2026-08-01T12:00:00+00:00",
         "generated_by": "test-training-job",
+        "training_data": {
+            "sha256": "a" * 64,
+            "size_bytes": 1234,
+        },
         "ranking_evaluation": {
             "k": 10,
             "evaluated_users": 25,
@@ -439,6 +449,8 @@ def test_model_info_exposes_ranking_metrics(monkeypatch):
     assert data["ranking_k"] == 10
     assert data["trained_at"] == "2026-08-01T12:00:00+00:00"
     assert data["generated_by"] == "test-training-job"
+    assert data["training_data_sha256"] == "a" * 64
+    assert data["training_data_size_bytes"] == 1234
     assert data["precision_at_k"] == 0.125
     assert data["recall_at_k"] == 0.375
     assert data["ranking_evaluated_users"] == 25

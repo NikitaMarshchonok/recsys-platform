@@ -40,5 +40,11 @@
     "test_ratings": 799463,
     "predicted_ratings": 797972,
     "prediction_coverage": 0.9981
+  },
+  "training_data": {
+    "path": "data/raw/ratings.csv",
+    "algorithm": "sha256",
+    "sha256": "fb6f40a26e0d41e8062afbd4bb00e2f092e2b889a8245d0d61ab0c94e22197bf",
+    "size_bytes": 513444147
   }
 }

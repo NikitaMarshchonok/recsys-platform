@@ -6,7 +6,9 @@ from pyspark.ml.evaluation import RegressionEvaluator
 from datetime import datetime, timezone
 import json
 import os
+from pathlib import Path
 
+from src.data.versioning import fingerprint_file
 from src.evaluation.spark_metrics import evaluate_ranking_predictions
 
 
@@ -28,11 +30,14 @@ mlflow.set_experiment("recsys_als")
 
 print("Сессии созданы")
 
+ratings_path = Path("data/raw/ratings.csv")
+training_data = fingerprint_file(ratings_path)
+
 # Читаем оценки
 ratings = spark.read \
     .option("header", "true") \
     .option("inferSchema", "true") \
-    .csv("data/raw/ratings.csv")
+    .csv(str(ratings_path))
 
 # Берём 20% данных для обучения на локальной машине
 ratings = ratings.sample(fraction=0.2, seed=42)
@@ -129,6 +134,7 @@ with mlflow.start_run():
         "dataset": "MovieLens ratings",
         "trained_at": datetime.now(timezone.utc).isoformat(),
         "generated_by": "src/training/train.py",
+        "training_data": training_data,
         "rating_scale": {"min": 0.0, "max": 5.0},
         "score_policy": {
             "predicted_rating": "clipped to the user-facing 0-5 rating scale",

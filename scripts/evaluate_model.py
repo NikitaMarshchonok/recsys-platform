@@ -8,6 +8,7 @@ from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALSModel
 from pyspark.sql import SparkSession
 
+from src.data.versioning import fingerprint_file
 from src.evaluation.spark_metrics import evaluate_ranking_predictions
 
 
@@ -69,6 +70,7 @@ def evaluate_saved_model(
     relevance_threshold: float,
 ) -> dict[str, float | int | str]:
     training = load_training_config(model_path)
+    training_data = fingerprint_file(ratings_path)
     spark = (
         SparkSession.builder.appName("RecSys Saved Model Evaluation")
         .master("local[*]")
@@ -113,6 +115,9 @@ def evaluate_saved_model(
 
         return {
             "model_path": str(model_path),
+            "training_data_path": training_data["path"],
+            "training_data_sha256": training_data["sha256"],
+            "training_data_size_bytes": training_data["size_bytes"],
             "test_ratings": test_ratings,
             "predicted_ratings": predicted_ratings,
             "prediction_coverage": round(
@@ -151,6 +156,12 @@ def update_model_card(
     ranking_k = int(evaluation["ranking_k"])
     test_ratings = int(evaluation["test_ratings"])
     predicted_ratings = int(evaluation["predicted_ratings"])
+    model_card["training_data"] = {
+        "path": str(evaluation["training_data_path"]),
+        "algorithm": "sha256",
+        "sha256": str(evaluation["training_data_sha256"]),
+        "size_bytes": int(evaluation["training_data_size_bytes"]),
+    }
     model_card["ranking_evaluation"] = {
         "k": ranking_k,
         "relevance_threshold": float(evaluation["relevance_threshold"]),

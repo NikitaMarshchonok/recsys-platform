@@ -16,6 +16,9 @@ def test_update_model_card_writes_ranking_metrics_atomically(tmp_path):
     )
     evaluation = {
         "model_path": str(model_path),
+        "training_data_path": "data/raw/ratings.csv",
+        "training_data_sha256": "a" * 64,
+        "training_data_size_bytes": 1234,
         "test_ratings": 12,
         "predicted_ratings": 11,
         "prediction_coverage": 0.9167,
@@ -31,6 +34,12 @@ def test_update_model_card_writes_ranking_metrics_atomically(tmp_path):
 
     updated = json.loads(model_card_path.read_text(encoding="utf-8"))
     assert updated["model_name"] == "Test ALS"
+    assert updated["training_data"] == {
+        "path": "data/raw/ratings.csv",
+        "algorithm": "sha256",
+        "sha256": "a" * 64,
+        "size_bytes": 1234,
+    }
     assert updated["metrics"] == {
         "rmse": 0.8,
         "precision_at_10": 0.25,
